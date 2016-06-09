@@ -1,0 +1,82 @@
+{
+  "ecmaFeatures": {
+    "jsx": true,
+    "modules": true
+  },
+  "sourceType": "script",
+  "env": {
+    "browser": true,
+    "node": true,
+    "es6": true,
+    "mocha": true
+  },
+  "parser": "babel-eslint",
+  "plugins": [
+    "react",
+    "flowtype"
+  ],
+  "rules": {
+    "strict": 0,    // "use strict"를 global 영역에서 사용한다.
+    "quotes": [0, "single"],    // 문자열은 ' '을 사용한다.
+
+    /*
+     * 구문 (Statement) 관련
+     */
+    "curly": [1, "all"],        // 모든 조건문에서 { }를 사용한다.
+    "semi": [1, "always"],      // 구문의 끝에 semicolon을 항상 붙이도록 한다.
+    "semi-spacing": 1,          // semiconlon 뒤에는 spacing을 붙여야한다.
+    "comma-spacing": 1,         // comma 앞에는 spacing을 붙이지 않고, 뒤에는 spacing을 붙여야한다.
+
+    "new-cap": 0,
+    "camelcase": 0,
+    "comma-dangle": 0,
+    "dot-notation": 0,
+
+    "no-alert": 2,                          // alert()의 직접적 사용을 금지한다.
+    "no-console": 2,                        // console..()의 직접적 사용을 금지한다.
+    "no-debugger": 2,                       // debugger의 직접적 사용을 금지한다.
+    "no-underscore-dangle": 0,
+
+    /*
+     * 변수 관련
+     */
+    "prefer-const": 1,                      // 변수사용시(값이 변경되지 않는 경우), let보다 const를 사용하도록 한다.
+    "no-use-before-define": [1, "nofunc"],  // 선언 전 사용을 금지한다. (function금지, class허용)
+    "no-unused-vars": [1, {                 // 사용하지 않는 변수의 선언을 금지한다.
+      "argsIgnorePattern": "^((prev|next)(State|Props)|e|_.*)$",
+      "vars": "local",
+      "varsIgnorePattern": "(debug|^_)"
+    }],
+
+    /*
+     * JSX 관련
+     */
+    "jsx-quotes": [1, "prefer-double"],         // jsx 파일의 문자열은 " "을 사용한다.
+    "react/wrap-multilines": 1,                 // jsx의 내용이 괄호로 감싸지도록 한다.
+    "react/jsx-boolean-value": [1, "always"],   // prop이 Boolean타입인 경우, propA={ true }로 쓰도록 한다.
+    "react/jsx-no-duplicate-props": 1,          // jsx prop의 항목의 중복을 금지한다.
+    "react/jsx-no-undef": 2,                    // 선언된 jsx 컴포넌트와 중복된 이름을 금지한다.
+    "react/jsx-uses-react": 1,                  // React 항목이 사용됨으로 체크한다. (no-unsed-vars 옵션 연계)
+    "react/jsx-uses-vars": 1,                   // jsx에서 사용하는 변수들을 체크한다. (no-unused-vars 옵션 연계)
+    "react/jsx-curly-spacing": [1, "always", {  // jsx prop의 중괄호 값 안에 공간을 띄어쓴다. { value }
+      "alternative": true
+    }],
+
+    /*
+     * FlowType 관련
+     */
+    "flowtype/require-parameter-type": 1,
+    "flowtype/require-return-type": 1,
+    "flowtype/space-after-type-colon": 1
+  },
+  "settings": {
+    "flowtype": {
+      "onlyFilesWithFlowAnnotation": true
+    }
+  },
+  "globals": {
+    // For Flow
+    "ReactElement": true,
+    "ReactClass": true
+  }
+}
