@@ -58,9 +58,6 @@
     "react/jsx-no-undef": 2,                    // 선언된 jsx 컴포넌트와 중복된 이름을 금지한다.
     "react/jsx-uses-react": 1,                  // React 항목이 사용됨으로 체크한다. (no-unsed-vars 옵션 연계)
     "react/jsx-uses-vars": 1,                   // jsx에서 사용하는 변수들을 체크한다. (no-unused-vars 옵션 연계)
-    "react/jsx-curly-spacing": [1, "always", {  // jsx prop의 중괄호 값 안에 공간을 띄어쓴다. { value }
-      "alternative": true
-    }],
 
     /*
      * FlowType 관련

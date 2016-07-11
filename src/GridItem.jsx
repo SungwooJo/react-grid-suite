@@ -1,321 +1,447 @@
-/* @flow */
-"use strict";
+// @flow
+import React, {PropTypes} from 'react';
+import {DraggableCore} from 'react-draggable';
+import {Resizable} from 'react-resizable';
+import {perc, setTopLeft, setTransform, autoBindHandlers} from './utils/GridUtils';
+import {generateEmptySlot} from './utils/InnerGridUtils';
+import InnerGridLayout from './item/InnerGridLayout.jsx';
+import _ from 'lodash';
 
-// Common Modules...
-import React, { PropTypes } from 'react';
-import { DraggableCore } from 'react-draggable';
-import { Resizable } from 'react-resizable';
-
-// Own Modules...
-
-// Local Fields...
+const noop = () => {};
 
 
-// Beginning of Logic!
 /**
- *
+ * An individual item within a ReactGridLayout.
  */
-class GridItem extends React.Component {
+export default class GridItem extends React.Component {
+
+  state: State = {
+    resizing: null,
+    dragging: null,
+    className: ''
+  };
+
+  constructor (props: Object): void {
+    super(props);
+
+    // Event Binding
+    autoBindHandlers(this, [
+      'generateCard',
+    ]);
+  }
+
+  // Helper for generating column width
+  calcColWidth(): number {
+    const {margin, containerWidth, cols} = this.props;
+    return (containerWidth - (margin[0] * (cols + 1))) / cols;
+  }
+
   /**
-   *
-   * @param props {Object}
-   * @param context {Object}
+   * Return position on the page given an x, y, w, h.
+   * left, top, width, height are all in pixels.
+   * @param  {Number}  x             X coordinate in grid units.
+   * @param  {Number}  y             Y coordinate in grid units.
+   * @param  {Number}  w             W coordinate in grid units.
+   * @param  {Number}  h             H coordinate in grid units.
+   * @return {Object}                Object containing coords.
    */
-  constructor (props: Object, context: Object) {
-    super(props, context);
+  calcPosition(x: number, y: number, w: number, h: number, state: ?Object): Position {
+  const {margin, rowHeight} = this.props;
+  const colWidth = this.calcColWidth();
 
+  const out = {
+    left: Math.round(colWidth * x + (x + 1) * margin[0]),
+    top: Math.round(rowHeight * y + (y + 1) * margin[1]),
+    // 0 * Infinity === NaN, which causes problems with resize constriants;
+    // Fix this if it occurs.
+    // Note we do it here rather than later because Math.round(Infinity) causes deopt
+    width: w === Infinity ? w : Math.round(colWidth * w + Math.max(0, w - 1) * margin[0]),
+    height: h === Infinity ? h : Math.round(rowHeight * h + Math.max(0, h - 1) * margin[1])
+  };
+
+  if (state && state.resizing) {
+  out.width = Math.round(state.resizing.width);
+  out.height = Math.round(state.resizing.height);
+}
+
+if (state && state.dragging) {
+  out.top = Math.round(state.dragging.top);
+  out.left = Math.round(state.dragging.left);
+}
+
+return out;
+}
+
+/**
+ * Translate x and y coordinates from pixels to grid units.
+ * @param  {Number} top  Top position (relative to parent) in pixels.
+ * @param  {Number} left Left position (relative to parent) in pixels.
+ * @return {Object} x and y in grid units.
+ */
+calcXY(top: number, left: number): {x: number, y: number} {
+  const {margin, cols, rowHeight, w, h, maxRows} = this.props;
+  const colWidth = this.calcColWidth();
+
+  // left = colWidth * x + margin * (x + 1)
+  // l = cx + m(x+1)
+  // l = cx + mx + m
+  // l - m = cx + mx
+  // l - m = x(c + m)
+  // (l - m) / (c + m) = x
+  // x = (left - margin) / (coldWidth + margin)
+  let x = Math.round((left - margin[0]) / (colWidth + margin[0]));
+  let y = Math.round((top - margin[1]) / (rowHeight + margin[1]));
+
+  // Capping
+  x = Math.max(Math.min(x, cols - w), 0);
+  y = Math.max(Math.min(y, maxRows - h), 0);
+
+  return {x, y};
+}
+
+/**
+ * Given a height and width in pixel values, calculate grid units.
+ * @param  {Number} height Height in pixels.
+ * @param  {Number} width  Width in pixels.
+ * @return {Object} w, h as grid units.
+ */
+calcWH({height, width}: {height: number, width: number}): {w: number, h: number} {
+  const {margin, maxRows, cols, rowHeight, x, y} = this.props;
+  const colWidth = this.calcColWidth();
+
+  // width = colWidth * w - (margin * (w - 1))
+  // ...
+  // w = (width + margin) / (colWidth + margin)
+  let w = Math.round((width + margin[0]) / (colWidth + margin[0]));
+  let h = Math.round((height + margin[1]) / (rowHeight + margin[1]));
+
+  // Capping
+  w = Math.max(Math.min(w, cols - x), 0);
+  h = Math.max(Math.min(h, maxRows - y), 0);
+  return {w, h};
+}
+
+/**
+ * This is where we set the grid item's absolute placement. It gets a little tricky because we want to do it
+ * well when server rendering, and the only way to do that properly is to use percentage width/left because
+ * we don't know exactly what the browser viewport is.
+ * Unfortunately, CSS Transforms, which are great for performance, break in this instance because a percentage
+ * left is relative to the item itself, not its container! So we cannot use them on the server rendering pass.
+ *
+ * @param  {Object} pos Position object with width, height, left, top.
+ * @return {Object}     Style object.
+ */
+createStyle(pos: Position): {[key: string]: ?string} {
+  const {usePercentages, containerWidth, useCSSTransforms} = this.props;
+
+  let style;
+  // CSS Transforms support (default)
+  if (useCSSTransforms) {
+    style = setTransform(pos);
   }
+  // top,left (slow)
+  else {
+    style = setTopLeft(pos);
 
-  componentWillMount () {
-
-  }
-
-  componentDidMount () {
-
-  }
-
-  componentWillReceiveProps (nextProps: Object, nextContext: Object) {
-
-  }
-
-  componentWillUpdate (nextProps: Object, nextState: Object) {
-
-  }
-
-  componentDidUpdate () {
-
-  }
-
-  componentWillUnmount () {
-
-  }
-
-  render (): React.Element {
-    const { x, y, w, h } = this.props;
-
-    const child = React.Children.only(this.props.children);
-    let wrapped = React.cloneElement(child, {
-
-    });
-
-    const coordinate = this._calculateCoordinate();
-    if (this.props.isResizable) {
-      wrapped = this.wrapResizableUp(wrapped, coordinate);
+    // This is used for server rendering.
+    if (usePercentages) {
+      style.left = perc(pos.left / containerWidth);
+      style.width = perc(pos.width / containerWidth);
     }
-    if (this.props.isDraggable) {
-      wrapped = this.wrapDraggableUp(wrapped);
+  }
+
+  return style;
+}
+
+/**
+ * Mix a Draggable instance into a child.
+ * @param  {Element} child    Child element.
+ * @return {Element}          Child wrapped in Draggable.
+ */
+mixinDraggable(child: React.Element): React.Element {
+  return (
+    <DraggableCore
+      onStart={this.onDragHandler('onDragStart')}
+      onDrag={this.onDragHandler('onDrag')}
+      onStop={this.onDragHandler('onDragStop')}
+      handle={this.props.handle}
+      cancel={".react-resizable-handle" + (this.props.cancel ? "," + this.props.cancel : "")}>
+      {child}
+    </DraggableCore>
+  );
+}
+
+/**
+ * Mix a Resizable instance into a child.
+ * @param  {Element} child    Child element.
+ * @param  {Object} position  Position object (pixel values)
+ * @return {Element}          Child wrapped in Resizable.
+ */
+mixinResizable(child: React.Element, position: Position): React.Element {
+  const {cols, x, minW, minH, maxW, maxH} = this.props;
+
+  // This is the max possible width - doesn't go to infinity because of the width of the window
+  const maxWidth = this.calcPosition(0, 0, cols - x, 0).width;
+
+  // Calculate min/max constraints using our min & maxes
+  const mins = this.calcPosition(0, 0, minW, minH);
+  const maxes = this.calcPosition(0, 0, maxW, maxH);
+  const minConstraints = [mins.width, mins.height];
+  const maxConstraints = [Math.min(maxes.width, maxWidth), Math.min(maxes.height, Infinity)];
+  return (
+    <Resizable
+      width={position.width}
+      height={position.height}
+      minConstraints={minConstraints}
+      maxConstraints={maxConstraints}
+      onResizeStop={this.onResizeHandler('onResizeStop')}
+      onResizeStart={this.onResizeHandler('onResizeStart')}
+      onResize={this.onResizeHandler('onResize')}>
+      {child}
+    </Resizable>
+  );
+}
+
+/**
+ * Wrapper around drag events to provide more useful data.
+ * All drag events call the function with the given handler name,
+ * with the signature (index, x, y).
+ *
+ * @param  {String} handlerName Handler name to wrap.
+ * @return {Function}           Handler function.
+ */
+onDragHandler(handlerName:string): Function {
+  return (e:Event, {node, position}: {node: HTMLElement, position: CorePosition}) => {
+    if (!this.props[handlerName]) return;
+
+    let newPosition: {top: number, left: number} = {top: 0, left: 0};
+
+    // Get new XY
+    switch (handlerName) {
+      case 'onDragStart':
+        // ToDo this wont work on nested parents
+        const parentRect = node.offsetParent.getBoundingClientRect();
+        const clientRect = node.getBoundingClientRect();
+        newPosition.top = clientRect.top - parentRect.top;
+        newPosition.left = clientRect.left - parentRect.left;
+        this.setState({dragging: newPosition});
+        break;
+      case 'onDrag':
+        if (!this.state.dragging) throw new Error('onDrag called before onDragStart.');
+        newPosition.left = this.state.dragging.left + position.deltaX;
+        newPosition.top = this.state.dragging.top + position.deltaY;
+        this.setState({dragging: newPosition});
+        break;
+      case 'onDragStop':
+        if (!this.state.dragging) throw new Error('onDragEnd called before onDragStart.');
+        newPosition.left = this.state.dragging.left;
+        newPosition.top = this.state.dragging.top;
+        this.setState({dragging: null});
+        break;
+      default:
+        throw new Error('onDragHandler called with unrecognized handlerName: ' + handlerName);
     }
-    return wrapped;
-  }
 
-  /**
-   *
-   * @param child {React.Element}
-   * @param coordinate {Object}
-   * @returns {React.Element}
-   */
-  wrapResizableUp (child: React.Element, coordinate: Object): React.Element {
-    const {x, cols, minW, minH, maxW, maxH } = this.props;
+    const {x, y} = this.calcXY(newPosition.top, newPosition.left);
 
-    const maxWidth = this._calculateCoordinate(0, 0, cols-x, 0).width;
-    const minCoordinate = this._calculateCoordinate(0, 0, minW, minH);
-    const maxCoordinate = this._calculateCoordinate(0, 0, maxW, maxH);
+    this.props[handlerName](this.props.i, x, y, {e, node, newPosition});
+  };
+}
 
-    return (
-      <Resizable
-        width={ coordinate.width }
-        height={ coordinate.height }
-        minContraints={ [minCoordinate.width, minCoordinate.height] }
-        maxConstraints={ [Math.min(maxWidth, maxCoordinate.width), Math.min(maxCoordinate.height, Infinity)] }
-        onResizeStart={ this.onResizeHandler('onResizeStart') }
-        onResize={ this.onResizeHandler('onResizing') }
-        onResizeStop={ this.onResizeHandler('onResizeFinish') } >
-        { child }
-      </Resizable>
-    );
-  }
+/**
+ * Wrapper around drag events to provide more useful data.
+ * All drag events call the function with the given handler name,
+ * with the signature (index, x, y).
+ *
+ * @param  {String} handlerName Handler name to wrap.
+ * @return {Function}           Handler function.
+ */
+onResizeHandler(handlerName:string): Function {
+  return (e:Event, {element, size}: {element: HTMLElement, size: Position}) => {
+    if (!this.props[handlerName]) return;
+    const {cols, x, i, maxW, minW, maxH, minH} = this.props;
 
-  /**
-   *
-   * @param child {React.Element}
-   * @returns {React.Element}
-   */
-  wrapDraggableUp (child: React.Element): React.Element {
-    return (
-        <DraggableCore
-            handle={ this.props.handleSelector }
-            cancel={ this.props.cancelSelector }
-            onStart={ this.onDragHandler('onDragStart') }
-            onDrag={ this.onDragHandler('onDragging') }
-            onStop={ this.onDragHandler('onDragFinish') } >
-          { child }
-        </DraggableCore>
-    );
-  }
+    // Get new XY
+    let {w, h} = this.calcWH(size);
 
-  /**
-   *
-   * @param callbackName {string}
-   * @returns {Function}
-   * @private
-   */
-  onDragHandler (callbackName: string): Function {
-    return (evt: Event, { node, position }: { node: HTMLElement, position: Object }) => {
-      const callback = this.props[callbackName];
-      if (callback) {
-        const { id } = this.props;
-        const { dragging } = this.state;
+    // Cap w at numCols
+    w = Math.min(w, cols - x);
+    // Ensure w is at least 1
+    w = Math.max(w, 1);
 
-        let newPos: { top: number, left: number } = null;
-        switch (callbackName) {
-          case 'onDragStart':
-            const parentRect = node.offsetParent.getBoundingClientRect();
-            const clientRect = node.getBoundingClientRect();
-            newPos = {
-              left: clientRect.left - parentRect.left,
-              top: clientRect.top - parentRect.top
-            };
-            this.setState({
-              dragging: newPos
-            });
-            break;
-          case 'onDragging':
-            if (dragging) {
-              newPos = {
-                left: dragging.left + position.deltaX,
-                top: dragging.top + position.deltaY
-              };
-            }
-            this.setState({
-              dragging: newPos
-            });
-            break;
-          case 'onDragFinish':
-            if (dragging) {
-              newPos = {
-                left: dragging.left,
-                top: dragging.top
-              };
-            }
-            this.setState({
-              dragging: null
-            });
-            break;
-          default:
-            throw new Error('GridItem_onDragHandler called with invalid callback name: ' + callbackName);
-        }
-        const { x, y } = this._calculatePositionXY(newPos.top, newPos.left);
-        callback(id, x, y, { evt, node, newPos });
-      }
-    };
-  }
+    // Min/max capping
+    w = Math.max(Math.min(w, maxW), minW);
+    h = Math.max(Math.min(h, maxH), minH);
 
-  /**
-   *
-   * @param callbackName {string}
-   * @returns {Function}
-   */
-  onResizeHandler (callbackName: string): Function {
-    return (evt: Event, { element, size }: { element: HTMLElement, size: Object }) => {
-      const callback = this.props[callbackName];
-      if (callback) {
-        const { id, cols, x, maxW, minW, maxH, minH } = this.props;
+    this.setState({resizing: handlerName === 'onResizeStop' ? null : size});
 
-        let { w, h } = this._calculateSizeWH(size.width, size.height);
-        w = Math.max(Math.min(w, cols-x), 1);
-        w = Math.max(Math.min(w, maxW), minW);
-        h = Math.max(Math.min(w, maxH), minH);
+    this.props[handlerName](i, w, h, {e, element, size});
+  };
+}
 
-        this.setState({
-          resizing: (callbackName === 'onResizeFinish')? null : size
-        });
-        callback(id, w, h, { evt, element, size });
-      }
-    };
-  }
+componentDidMount () {
+  console.log(this.refs['innerGridRef' + this.props.i]);
 
-  /**
-   *
-   * @param x {number}
-   * @param y {number}
-   * @param w {number}
-   * @param h {number}
-   * @param state {Object}
-   * @private
-   */
-  _calculateCoordinate (x: number, y: number, w: number, h: number, state: Object) {
-
-  }
-
-  /**
-   *
-   * @param top {number} Top position relative to parent (px)
-   * @param left {number} Left position relative to parent (px)
-   * @private
-   */
-  _calculatePositionXY (top: number, left: number): { x: number, y: number } {
-
-  }
-
-  /**
-   * @param width {number} Width (px)
-   * @param height {number} Height (px)
-   * @private
-   */
-  _calculateSizeWH (width: number, height: number): { w: number, h: number } {
-
+  let innerGridRef = this.refs['innerGridRef' + this.props.i];
+  if (innerGridRef) {
+    // addInnerGrid
+    this.props.addInnerGrid(innerGridRef);
   }
 }
 
+generateCard (item) {
+  if (item.i.indexOf('empty-card-slot') >= 0) {
+    return generateEmptySlot(item);
+  }
+  else {
+    return this.props.generateGridCard(item);
+  }
+}
+
+render(): React.Element {
+  const {x, y, w, h, i, isDraggable, isResizable, useCSSTransforms, isInnerGrid, innerGriditems, innerGridLayout, containerWidth, margin} = this.props;
+
+  const pos = this.calcPosition(x, y, w, h, this.state);
+  const child = React.Children.only(this.props.children);
+  let newChild;
+
+  if (!isInnerGrid) {
+    // Create the child element. We clone the existing element but modify its className and style.
+    newChild = React.cloneElement(child, {
+      // Munge a classname. Use passed in classnames and resizing.
+      // React with merge the classNames.
+      className: [
+        'react-grid-item',
+        child.props.className || '',
+        this.props.className,
+        this.props.static ? 'static' : '',
+        this.state.resizing ? 'resizing' : '',
+        this.state.dragging ? 'react-draggable-dragging' : '',
+        useCSSTransforms ? 'cssTransforms' : ''
+      ].join(' '),
+      // We can set the width and height on the child, but unfortunately we can't set the position.
+      style: {...this.props.style, ...child.props.style, ...this.createStyle(pos)}
+    });
+  }
+  else {
+    // by swjo 16/06/27
+    // Create the innerGrid element.
+    let innerGrid = React.createElement(
+      InnerGridLayout,
+      {ref: 'innerGridRef' + i, width: (containerWidth-(margin[0]*2)), className:'inner-grid', cols: 12, margin: [5, 5], rowHeight: 40, layout: innerGridLayout, isResizable: false, switchMode: true},
+      _.map(innerGriditems, this.generateCard)
+    );
+
+    newChild = React.cloneElement(child, {
+      // Munge a classname. Use passed in classnames and resizing.
+      // React with merge the classNames.
+      className: [
+        'react-grid-item',
+        child.props.className || '',
+        this.props.className,
+        this.props.static ? 'static' : '',
+        this.state.resizing ? 'resizing' : '',
+        this.state.dragging ? 'react-draggable-dragging' : '',
+        useCSSTransforms ? 'cssTransforms' : ''
+      ].join(' '),
+      // We can set the width and height on the child, but unfortunately we can't set the position.
+      style: {...this.props.style, ...child.props.style, ...this.createStyle(pos)}
+    }, innerGrid);
+  }
+
+
+  // Resizable support. This is usually on but the user can toggle it off.
+  if (isResizable) newChild = this.mixinResizable(newChild, pos);
+
+  // Draggable support. This is always on, except for with placeholders.
+  if (isDraggable) newChild = this.mixinDraggable(newChild);
+
+  return newChild;
+}
+}
+
 GridItem.propTypes = {
-  /**
-   * ClassName
-   */
-  className: PropTypes.string,
-  /*
-   * Children: Must be only a single element
-   */
+  // Children must be only a single element
   children: PropTypes.element,
 
-  /**
-   * ID
-   */
-  id: PropTypes.string.isRequired,
-  /**
-   * X position
-   */
+  // General grid attributes
+  cols: PropTypes.number.isRequired,
+  containerWidth: PropTypes.number.isRequired,
+  rowHeight: PropTypes.number.isRequired,
+  margin: PropTypes.array.isRequired,
+  maxRows: PropTypes.number.isRequired,
+
+  // These are all in grid units
   x: PropTypes.number.isRequired,
-  /**
-   * Y position
-   */
   y: PropTypes.number.isRequired,
-  /**
-   * Width
-   */
   w: PropTypes.number.isRequired,
-  /**
-   * Height
-   */
   h: PropTypes.number.isRequired,
 
-  /**
-   * Selector for draggable handle
-   */
-  handleSelector: PropTypes.string,
-  /**
-   * Selector for draggable cancel (see react-draggable)
-   */
-  cancelSelector: PropTypes.string,
+  // All optional
+  minW: function (props, propName, componentName, location, propFullName) {
+    PropTypes.number(props, propName, componentName, location, propFullName);
+    const value = props[propName];
+    if (value > props.w || value > props.maxW) return new Error('minWidth bigger than item width/maxWidth');
+  },
+  maxW: function (props, propName, componentName, location, propFullName) {
+    PropTypes.number(props, propName, componentName, location, propFullName);
+    const value = props[propName];
+    if (value < props.w || value < props.minW) return new Error('maxWidth smaller than item width/minWidth');
 
+  },
+  minH: function (props, propName, componentName, location, propFullName) {
+    PropTypes.number(props, propName, componentName, location, propFullName);
+    const value = props[propName];
+    if (value > props.h || value > props.maxH) return new Error('minHeight bigger than item height/maxHeight');
+  },
+  maxH: function (props, propName, componentName, location, propFullName) {
+    PropTypes.number(props, propName, componentName, location, propFullName);
+    const value = props[propName];
+    if (value < props.h || value < props.minH) return new Error('maxHeight smaller than item height/minHeight');
+  },
 
-  /**
-   * Flag: Draggable
-   */
-  isDraggable: PropTypes.bool,
-  /**
-   * Flag: Resizable
-   */
-  isResizable: PropTypes.bool,
-  /**
-   * Flag: Animation Enable
-   */
-  isAnimationEnabled: PropTypes.bool,
-  /**
-   * Flag: Static
-   */
-  isStatic: PropTypes.static,
+  // ID is nice to have for callbacks
+  i: PropTypes.string.isRequired,
 
-
-  /**
-   * Callback: when drag starts
-   */
+  // Functions
+  onDragStop: PropTypes.func,
   onDragStart: PropTypes.func,
-  /**
-   * Callback: on each drag movement
-   */
-  onDragging: PropTypes.func,
-  /**
-   * Callback: when drag is finished
-   */
-  onDragFinish: PropTypes.func,
-  /**
-   * Callback: when resize starts
-   */
+  onDrag: PropTypes.func,
+  onResizeStop: PropTypes.func,
   onResizeStart: PropTypes.func,
-  /**
-   * Callback: on each resize movement
-   */
-  onResizing: PropTypes.func,
-  /**
-   * Callback: when resize is finished
-   */
-  onResizeFinish: PropTypes.func
+  onResize: PropTypes.func,
+
+  // Flags
+  isDraggable: PropTypes.bool.isRequired,
+  isResizable: PropTypes.bool.isRequired,
+  static: PropTypes.bool,
+
+  // Props by swjo
+  isInnerGrid: PropTypes.bool,
+  innerGridLayout: PropTypes.array,
+  addInnerGrid: PropTypes.func,
+
+  // Use CSS transforms instead of top/left
+  useCSSTransforms: PropTypes.bool.isRequired,
+
+  // Others
+  className: PropTypes.string,
+  // Selector for draggable handle
+  handle: PropTypes.string,
+  // Selector for draggable cancel (see react-draggable)
+  cancel: PropTypes.string
 };
 
 GridItem.defaultProps = {
+  className: '',
+  cancel: '',
+  minH: 1,
+  minW: 1,
+  maxH: Infinity,
+  maxW: Infinity,
 
+  // Flags by swjo
+  isInnerGrid : false,
+  innerGridLayout: [],
+  addInnerGrid: noop
 };
-
-GridItem.displayName = "GridItemLayout";
-
-export default GridItem;
