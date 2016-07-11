@@ -287,176 +287,176 @@ export default class GridCore extends React.Component {
    * Create a placeholder object.
    * @return {Element} Placeholder div.
    */
-  placeholder (): ?React.Element {
-  const {activeDrag} = this.state;
-  if (this.props.onBlendingFrom || !activeDrag) return null;
-  const {width, cols, margin, rowHeight, maxRows, useCSSTransforms} = this.props;
+  placeholder () {
+    const {activeDrag} = this.state;
+    if (this.props.onBlendingFrom || !activeDrag) return null;
+    const {width, cols, margin, rowHeight, maxRows, useCSSTransforms} = this.props;
 
-  // {...this.state.activeDrag} is pretty slow, actually
-  return (
-<GridItem
-w={activeDrag.w}
-h={activeDrag.h}
-x={activeDrag.x}
-y={activeDrag.y}
-i={activeDrag.i}
-className="react-grid-placeholder"
-containerWidth={width}
-cols={cols}
-margin={margin}
-maxRows={maxRows}
-rowHeight={rowHeight}
-isDraggable={false}
-isResizable={false}
-useCSSTransforms={useCSSTransforms}>
-<div />
-</GridItem>
-);
-}
+    // {...this.state.activeDrag} is pretty slow, actually
+    return (
+      <GridItem
+        w={activeDrag.w}
+        h={activeDrag.h}
+        x={activeDrag.x}
+        y={activeDrag.y}
+        i={activeDrag.i}
+        className="react-grid-placeholder"
+        containerWidth={width}
+        cols={cols}
+        margin={margin}
+        maxRows={maxRows}
+        rowHeight={rowHeight}
+        isDraggable={false}
+        isResizable={false}
+        useCSSTransforms={useCSSTransforms}>
+        <div />
+      </GridItem>
+    );
+  }
 
-/**
- * Create a blending object.
- * @param node {React.Element}
- * @return {Element} Blending div.
- */
-blending (): ?React.Element {
-  const {activeDrag} = this.state;
-const {onBlendingItem, width, cols, margin, rowHeight, maxRows, useCSSTransforms} = this.props;
-if (activeDrag || !onBlendingItem) {
-  return null;
-}
+  /**
+   * Create a blending object.
+   * @param node {React.Element}
+   * @return {Element} Blending div.
+   */
+  blending() {
+    const {activeDrag} = this.state;
+    const {onBlendingItem, width, cols, margin, rowHeight, maxRows, useCSSTransforms} = this.props;
+    if (activeDrag || !onBlendingItem) {
+      return null;
+    }
 
-let props = {
-  margin: margin,
-  containerWidth: width,
-  cols: cols,
-  maxRows: maxRows,
-  rowHeight: rowHeight,
-  w: 1,
-  h: 1
-};
+    let props = {
+      margin: margin,
+      containerWidth: width,
+      cols: cols,
+      maxRows: maxRows,
+      rowHeight: rowHeight,
+      w: 1,
+      h: 1
+    };
 
-let { x, y } = calcXY(props, onBlendingItem.e.pageY, onBlendingItem.e.pageX, onBlendingItem.targetRect);
+    let {x, y} = calcXY(props, onBlendingItem.e.pageY, onBlendingItem.e.pageX, onBlendingItem.targetRect);
 
-return (
-  <GridItem
-    w={onBlendingItem.l.w}
-    h={onBlendingItem.l.h}
-    x={x}
-    y={y}
-    i='blending'
-    className="react-grid-placeholder"
-    containerWidth={width}
-    cols={cols}
-    margin={margin}
-    maxRows={maxRows}
-    rowHeight={rowHeight}
-    isDraggable={false}
-    isResizable={false}
-    useCSSTransforms={useCSSTransforms}>
-    <div></div>
-  </GridItem>
-);
-}
+    return (
+      <GridItem
+        w={onBlendingItem.l.w}
+        h={onBlendingItem.l.h}
+        x={x}
+        y={y}
+        i='blending'
+        className="react-grid-placeholder"
+        containerWidth={width}
+        cols={cols}
+        margin={margin}
+        maxRows={maxRows}
+        rowHeight={rowHeight}
+        isDraggable={false}
+        isResizable={false}
+        useCSSTransforms={useCSSTransforms}>
+        <div></div>
+      </GridItem>
+    );
+  }
 
-/**
- * Given a grid item, set its style attributes & surround in a <Draggable>.
- * @param  {Element} child React element.
- * @return {Element}       Element wrapped in draggable and properly placed.
- */
-processGridItem (child: React.Element): ?React.Element {
-  if (!child.key) {
-  console.warn('Grid item must have child key. Please check out this.');
-  return;
-}
-const l = getLayoutItem(this.state.layout, child.key);
-if (!l) return null;
-const {width, cols, margin, rowHeight, maxRows, isDraggable, isResizable,
-  useCSSTransforms, draggableCancel, draggableHandle, generateGridCard} = this.props;
+  /**
+   * Given a grid item, set its style attributes & surround in a <Draggable>.
+   * @param  {Element} child React element.
+   * @return {Element}       Element wrapped in draggable and properly placed.
+   */
+  processGridItem(child:React.Element) {
+    if (!child.key) {
+      console.warn('Grid item must have child key. Please check out this.');
+      return;
+    }
+    const l = getLayoutItem(this.state.layout, child.key);
+    if (!l) return null;
+    const { width, cols, margin, rowHeight, maxRows, isDraggable, isResizable,
+      useCSSTransforms, draggableCancel, draggableHandle, generateGridCard, onDrag } = this.props;
 
 // Parse 'static'. Any properties defined directly on the grid item will take precedence.
-const draggable = Boolean(!l.static && isDraggable && (l.isDraggable || l.isDraggable == null));
-const resizable = Boolean(!l.static && isResizable && (l.isResizable || l.isResizable == null));
+    const draggable = Boolean(!l.static && isDraggable && (l.isDraggable || l.isDraggable == null));
+    const resizable = Boolean(!l.static && isResizable && (l.isResizable || l.isResizable == null));
 
-return (
-  <GridItem
-    containerWidth={width}
-    cols={cols}
-    margin={margin}
-    maxRows={maxRows}
-    rowHeight={rowHeight}
-    cancel={draggableCancel}
-    handle={draggableHandle}
-    generateGridCard={generateGridCard}
+    return (
+      <GridItem
+        containerWidth={width}
+        cols={cols}
+        margin={margin}
+        maxRows={maxRows}
+        rowHeight={rowHeight}
+        cancel={draggableCancel}
+        handle={draggableHandle}
+        generateGridCard={generateGridCard}
 
-    onDragStop={this.onDragStop}
-    onDragStart={this.onDragStart}
-    onDrag={this.onDrag}
-    onResizeStart={this.onResizeStart}
-    onResize={this.onResize}
-    onResizeStop={this.onResizeStop}
+        onDragStop={this.onDragStop}
+        onDragStart={this.onDragStart}
+        onDrag={this.onDrag}
+        onResizeStart={this.onResizeStart}
+        onResize={this.onResize}
+        onResizeStop={this.onResizeStop}
+        
+        onTempDrag={this.props.onDrag}
 
-    isDraggable={draggable && !l.ig}
-    isResizable={resizable}
-    useCSSTransforms={useCSSTransforms && this.state.isMounted}
-    usePercentages={!this.state.isMounted}
+        isDraggable={draggable && !l.ig}
+        isResizable={resizable}
+        useCSSTransforms={useCSSTransforms && this.state.isMounted}
+        usePercentages={!this.state.isMounted}
 
-    w={l.w}
-    h={l.h}
-    x={l.x}
-    y={l.y}
-    i={l.i}
-    isInnerGrid={l.ig}
-    innerGriditems={l.igItems}
-    innerGridLayout={l.igLayout}
-    addInnerGrid={this.props.addInnerGrid}
+        w={l.w}
+        h={l.h}
+        x={l.x}
+        y={l.y}
+        i={l.i}
+        isInnerGrid={l.ig}
+        innerGriditems={l.igItems}
+        innerGridLayout={l.igLayout}
+        addInnerGrid={this.props.addInnerGrid}
 
-    minH={l.minH}
-    minW={l.minW}
-    maxH={l.maxH}
-    maxW={l.maxW}
-    static={l.static}
-  >
-    {
-      React.cloneElement(child, {
-
-      })
-    }
-  </GridItem>
-);
-}
-
-processComponentRef (ref:Element) {
-  console.log('processComponentRef: ' + ref);
-  if (ref) {
-    //let rect = ref.getBoundingClientRect();
-    this.props.onLayoutResize(ref);
+        minH={l.minH}
+        minW={l.minW}
+        maxH={l.maxH}
+        maxW={l.maxW}
+        static={l.static}
+      >
+        {
+          React.cloneElement(child, {})
+        }
+      </GridItem>
+    );
   }
-}
 
-render (): React.Element {
-  const {className, style} = this.props;
+  processComponentRef(ref:Element) {
+    console.log('processComponentRef: ' + ref);
+    if (ref) {
+      //let rect = ref.getBoundingClientRect();
+      this.props.onLayoutResize(ref);
+    }
+  }
 
-  const mergedClassName = `react-grid-layout ${className} ${this.state.isDragging?'dragging':null}`;
-  const mergedStyle = {
-    height: this.containerHeight(),
-    ...style
-  };
+  render():React.Element {
+    const {className, style} = this.props;
 
-  return (
-    <div className={mergedClassName} style={mergedStyle} ref={ (ref) => {
+    const mergedClassName = `react-grid-layout ${className} ${this.state.isDragging ? 'dragging' : null}`;
+    const mergedStyle = {
+      height: this.containerHeight(),
+      ...style
+    };
+
+    return (
+      <div className={mergedClassName} style={mergedStyle} ref={ (ref) => {
 
     if (ref) {
       //let rect = ref.getBoundingClientRect();
       this.props.onLayoutResize(ref);
     }
         } }>
-      {
-        React.Children.map(this.props.children, (child) => this.processGridItem(child))
-      }
-    </div>
-  );
-}
+        {
+          React.Children.map(this.props.children, (child) => this.processGridItem(child))
+        }
+      </div>
+    );
+  }
 }
 // TODO publish internal ReactClass displayName transform
 GridCore.displayName = "GridCore";

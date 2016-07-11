@@ -17,7 +17,7 @@ export default class Test extends React.Component {
       }),
     };
 
-    this.onLayoutChange = this.onLayoutChange.bind(this);
+    this.createAddit = this.createAddit.bind(this);
   }
 
   /**

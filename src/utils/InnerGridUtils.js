@@ -62,7 +62,7 @@ export function createInnerGrid(cardNum: number, density: number) {
           y: 3,
           w: 4,
           h: 2,
-          i: 'empty-card-slot-4'
+          i: 'empty-card-slot-4'                                                            
         },
         {
           x: 8,

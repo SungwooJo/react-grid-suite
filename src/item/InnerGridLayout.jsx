@@ -176,7 +176,8 @@ export default class InnerGridLayout extends React.Component {
       layout = moveElement(layout, l, x, y, true /* isUserAction */);
     }
 
-    this.props.onDrag(layout, oldDragItem, l, placeholder, e, node);
+    //this.props.onDrag(layout, oldDragItem, l, placeholder, e, node);
+    this.props.onTempDrag(layout, oldDragItem, l, placeholder, e, node);
 
     this.setState({
       isDragging: true,
@@ -287,7 +288,7 @@ export default class InnerGridLayout extends React.Component {
    */
   placeholder (): ?React.Element {
     const {activeDrag} = this.state;
-    if (this.props.onBlendingFrom || !activeDrag) return null;
+    if (!activeDrag) return null;
     const {width, cols, margin, rowHeight, maxRows, useCSSTransforms} = this.props;
 
     // {...this.state.activeDrag} is pretty slow, actually
@@ -310,51 +311,6 @@ export default class InnerGridLayout extends React.Component {
         <div />
       </GridItem>
     );
-  }
-
-  /**
-   * Create a blending object.
-   * @param node {React.Element}
-   * @return {Element} Blending div.
-   */
-  blending (): ?React.Element {
-    const {activeDrag} = this.state;
-  const {onBlendingItem, width, cols, margin, rowHeight, maxRows, useCSSTransforms} = this.props;
-  if (activeDrag || !onBlendingItem) {
-    return null;
-  }
-
-  let props = {
-    margin: margin,
-    containerWidth: width,
-    cols: cols,
-    maxRows: maxRows,
-    rowHeight: rowHeight,
-    w: 1,
-    h: 1
-  };
-
-  let { x, y } = calcXY(props, onBlendingItem.e.pageY, onBlendingItem.e.pageX, onBlendingItem.targetRect);
-
-  return (
-    <GridItem
-      w={onBlendingItem.l.w}
-      h={onBlendingItem.l.h}
-      x={x}
-      y={y}
-      i='blending'
-      className="react-grid-placeholder"
-      containerWidth={width}
-      cols={cols}
-      margin={margin}
-      maxRows={maxRows}
-      rowHeight={rowHeight}
-      isDraggable={false}
-      isResizable={false}
-      useCSSTransforms={useCSSTransforms}>
-      <div></div>
-    </GridItem>
-  );
   }
 
   /**
@@ -438,12 +394,6 @@ export default class InnerGridLayout extends React.Component {
       }}>
         {
           React.Children.map(this.props.children, (child) => this.processGridItem(child))
-        }
-        {
-          this.placeholder()
-        }
-        {
-          this.blending()
         }
       </div>
     );
@@ -534,13 +484,6 @@ InnerGridLayout.propTypes = {
   // Calls when resize is complete.
   onResizeStop: PropTypes.func,
 
-  // Calls on blending.
-  onBlendingItem: PropTypes.object,
-  // Calls when blending-In happens.
-  onBlendIn: PropTypes.func,
-  // Calls when blending-Out happens.
-  onBlendOut: PropTypes.func,
-
   onLayoutResize: PropTypes.func,
   //
   // Other validations
@@ -586,6 +529,4 @@ InnerGridLayout.defaultProps = {
   onResizeStop: noop,
 
   onLayoutResize: noop,
-  onBlendIn: noop,
-  onBlendOut: noop
 };

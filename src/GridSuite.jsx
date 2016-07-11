@@ -73,6 +73,7 @@ class GridSuite extends React.Component {
     let belowItem = placeholder;
     let currentPos = {};
 
+
     // get belowItem by (x,y)
     // 1. get grid contains (x,y)
     // 2. get item contains (x,y)
@@ -145,7 +146,7 @@ class GridSuite extends React.Component {
     this.setState({
       innerGrids: currentInnerGrids
     });
-    console.log(ReactDOM.findDOMNode(this.state.innerGrids[0]));
+    // console.log(ReactDOM.findDOMNode(this.state.innerGrids[0]));
   }
 
   /**
@@ -155,8 +156,8 @@ class GridSuite extends React.Component {
   placeholder () {
     const { dragEvt, belowItem, currentGrid, innerGridPos } = this.state;
     if (!dragEvt) return null;
-    console.log(belowItem);
-    console.log(currentGrid);
+    // console.log(belowItem);
+    // console.log(currentGrid);
 
     return (
       <GridPlaceholder
