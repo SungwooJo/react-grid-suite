@@ -117,7 +117,7 @@ export default class InnerGrid extends React.Component {
    * @param {Event} e The mousedown event
    * @param {Element} node The current dragging DOM element
    */
-  onDrag (i:string, x:number, y:number, {e, node}: DragEvent) {
+  onDrag (i:string, x:number, y:number, coordX, coordY, {e, node}: DragEvent) {
     const {oldDragItem} = this.state;
 
     let {layout} = this.state;

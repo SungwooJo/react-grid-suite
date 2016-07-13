@@ -353,7 +353,7 @@ export default class GridItem extends React.Component {
       // Create the innerGrid element.
       let innerGrid = React.createElement(
         InnerGrid,
-        {ref: 'innerGridRef' + i, width: (containerWidth-(margin[0]*2)), className:'inner-grid', cols: 12, margin: [5, 5], rowHeight: 40, 
+        {ref: 'innerGridRef' + i, width: (containerWidth-(margin[0]*2)), className:'inner-grid', cols: 12, margin: [5, 5], rowHeight: innerGriditems.length < 4 ? 25 : 50,
           layout: innerGridLayout, isResizable: false, switchMode: true, onSuitDragStart: onSuitDragStart, onSuitDrag: onSuitDrag, onSuitDragStop: onSuitDragStop},
         _.map(innerGriditems, this.generateCard)
       );

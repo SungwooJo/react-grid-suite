@@ -12,7 +12,10 @@ export default class Test extends React.Component {
     super();
 
     this.state = {
-      items: [0, 1, 2, 3, 4, 5, 6, 7, 8].map(function (i) {
+      items: [0, 1, 2, 3, 4, 5, 6, 7].map(function (i) {
+        return {i: i.toString(), x: 0, y: 0, w: 1, h: 1, ig: false, igItems: []};
+      }),
+      itemsForMergeTwoAddits: [0, 1].map(function (i) {
         return {i: i.toString(), x: 0, y: 0, w: 1, h: 1, ig: false, igItems: []};
       }),
     };

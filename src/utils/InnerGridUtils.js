@@ -4,7 +4,7 @@
  * @param density
  * @returns {{}}
  */
-export function createInnerGrid(cardNum: number, width: number, height: number) {
+export function addInnerGrid(cardNum: number, width: number, height: number) {
   const newInnerGridItem = {};
 
   newInnerGridItem.ig = true;
@@ -27,6 +27,8 @@ export function createInnerGrid(cardNum: number, width: number, height: number) 
   }
 
   switch (cardNum) {
+    case 2 :
+      break;
     case 6 :
       newInnerGridItem.igLayout = [
         {
@@ -71,6 +73,55 @@ export function createInnerGrid(cardNum: number, width: number, height: number) 
           h: 3,
           i: 'empty-card-slot-5'
         }
+      ];
+      break;
+    default :
+      return {};
+      break;
+  }
+
+  return newInnerGridItem;
+}
+
+/**
+ *
+ * @param cardNum
+ * @returns {{}}
+ */
+export function createInnerGrid(items, pos, width: number, height: number) {
+  const newInnerGridItem = {};
+  let id = '';
+  items.forEach((item) => {
+    id = id + item.i;
+  });
+
+  newInnerGridItem.ig = true;
+  newInnerGridItem.igItems = [...items];
+  newInnerGridItem.x = pos.x;
+  newInnerGridItem.y = pos.y;
+  newInnerGridItem.w = width;
+  newInnerGridItem.h = height;
+  newInnerGridItem.i = 'innerGrid' + id;
+
+  switch (items.length) {
+    case 2 :
+      newInnerGridItem.igLayout = [
+        {
+          x: 0,
+          y: 0,
+          w: 6,
+          h: 6,
+          ig: false,
+          i: items[0].i
+        },
+        {
+          x: 6,
+          y: 0,
+          w: 6,
+          h: 6,
+          ig: false,
+          i: items[1].i
+        },
       ];
       break;
     default :

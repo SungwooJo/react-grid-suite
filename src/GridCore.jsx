@@ -227,7 +227,7 @@ export default class GridCore extends React.Component {
     this.setState({
       isDragging: false,
       activeDrag: null,
-      layout: compact(layout, this.compactType(), cols),
+      // layout: compact(layout, this.compactType(), cols),
       oldDragItem: null
     });
     console.log('drag stop', layout);
