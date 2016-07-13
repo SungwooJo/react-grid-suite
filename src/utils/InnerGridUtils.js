@@ -4,15 +4,15 @@
  * @param density
  * @returns {{}}
  */
-export function createInnerGrid(cardNum: number, density: number) {
+export function createInnerGrid(cardNum: number, width: number, height: number) {
   const newInnerGridItem = {};
 
   newInnerGridItem.ig = true;
   newInnerGridItem.igItems = [];
   newInnerGridItem.x = 0;
   newInnerGridItem.y = 0;
-  newInnerGridItem.w = density * cardNum;
-  newInnerGridItem.h = (density * cardNum) / 2;
+  newInnerGridItem.w = width;
+  newInnerGridItem.h = height;
   newInnerGridItem.i = 'innerGrid';
 
   for (let i=0; i< cardNum; i++) {

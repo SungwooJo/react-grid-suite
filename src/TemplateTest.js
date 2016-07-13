@@ -12,7 +12,7 @@ export default class Test extends React.Component {
     super();
 
     this.state = {
-      items: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].map(function (i) {
+      items: [0, 1, 2, 3, 4, 5, 6, 7, 8].map(function (i) {
         return {i: i.toString(), x: 0, y: 0, w: 1, h: 1, ig: false, igItems: []};
       }),
     };
@@ -68,14 +68,13 @@ export default class Test extends React.Component {
         <GridSuite
           className={"additor-grid-manager"}
           margin={[10, 10]}
-          rowHeight={110}
+          rowHeight={240}
           verticalCompact={true}
-          autoMove={false}
           arrangeMode={true}
-          //switchMode={true}
+          autoMove={false}
 
-          width={1200}
-          cols={12}
+          width={600}
+          cols={3}
 
           maxRows={Infinity} 
           useCSSTransforms={true}

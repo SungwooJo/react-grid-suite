@@ -278,7 +278,7 @@ export default class Placeholder extends React.Component {
   }
 
   componentDidMount () {
-    console.log(this.refs['innerGridRef' + this.props.i]);
+    // console.log(this.refs['innerGridRef' + this.props.i]);
 
     let innerGridRef = this.refs['innerGridRef' + this.props.i];
     if (innerGridRef) {

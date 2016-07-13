@@ -4,7 +4,7 @@ import {DraggableCore} from 'react-draggable';
 import {Resizable} from 'react-resizable';
 import {perc, setTopLeft, setTransform, autoBindHandlers} from './utils/GridUtils';
 import {generateEmptySlot} from './utils/InnerGridUtils';
-import InnerGridLayout from './item/InnerGridLayout.jsx';
+import InnerGrid from './item/InnerGrid.jsx';
 import _ from 'lodash';
 
 const noop = () => {};
@@ -48,7 +48,7 @@ export default class GridItem extends React.Component {
   calcPosition(x: number, y: number, w: number, h: number, state: ?Object): Position {
     const {margin, rowHeight} = this.props;
     const colWidth = this.calcColWidth();
-  
+
     const out = {
       left: Math.round(colWidth * x + (x + 1) * margin[0]),
       top: Math.round(rowHeight * y + (y + 1) * margin[1]),
@@ -58,20 +58,20 @@ export default class GridItem extends React.Component {
       width: w === Infinity ? w : Math.round(colWidth * w + Math.max(0, w - 1) * margin[0]),
       height: h === Infinity ? h : Math.round(rowHeight * h + Math.max(0, h - 1) * margin[1])
     };
-  
+
     if (state && state.resizing) {
       out.width = Math.round(state.resizing.width);
       out.height = Math.round(state.resizing.height);
     }
-    
+
     if (state && state.dragging) {
       out.top = Math.round(state.dragging.top);
       out.left = Math.round(state.dragging.left);
     }
-    
+
     return out;
   }
-  
+
   /**
    * Translate x and y coordinates from pixels to grid units.
    * @param  {Number} top  Top position (relative to parent) in pixels.
@@ -81,7 +81,7 @@ export default class GridItem extends React.Component {
   calcXY(top: number, left: number): {x: number, y: number} {
     const {margin, cols, rowHeight, w, h, maxRows} = this.props;
     const colWidth = this.calcColWidth();
-  
+
     // left = colWidth * x + margin * (x + 1)
     // l = cx + m(x+1)
     // l = cx + mx + m
@@ -89,16 +89,26 @@ export default class GridItem extends React.Component {
     // l - m = x(c + m)
     // (l - m) / (c + m) = x
     // x = (left - margin) / (coldWidth + margin)
-    let x = Math.round((left - margin[0]) / (colWidth + margin[0]));
-    let y = Math.round((top - margin[1]) / (rowHeight + margin[1]));
-  
+
+    const coordX = (left - margin[0]) / (colWidth + margin[0]);
+    const coordY = (top - margin[1]) / (rowHeight + margin[1]);
+
+    let x = Math.round(coordX);
+    let y = Math.round(coordY);
+
+    const isXMergeArea = (Math.abs(coordX - x) > 0.05);
+    const isYMergeArea = (Math.abs(coordY - y) > 0.05);
+
+    // let isMergeArea = isXMergeArea || isYMergeArea;
+    // let isMergeArea = true;
+
     // Capping
     x = Math.max(Math.min(x, cols - w), 0);
     y = Math.max(Math.min(y, maxRows - h), 0);
-  
-    return {x, y};
+
+    return {x, y, coordX, coordY};
   }
-    
+
   /**
    * Given a height and width in pixel values, calculate grid units.
    * @param  {Number} height Height in pixels.
@@ -108,19 +118,19 @@ export default class GridItem extends React.Component {
   calcWH({height, width}: {height: number, width: number}): {w: number, h: number} {
     const {margin, maxRows, cols, rowHeight, x, y} = this.props;
     const colWidth = this.calcColWidth();
-  
+
     // width = colWidth * w - (margin * (w - 1))
     // ...
     // w = (width + margin) / (colWidth + margin)
     let w = Math.round((width + margin[0]) / (colWidth + margin[0]));
     let h = Math.round((height + margin[1]) / (rowHeight + margin[1]));
-  
+
     // Capping
     w = Math.max(Math.min(w, cols - x), 0);
     h = Math.max(Math.min(h, maxRows - y), 0);
     return {w, h};
   }
-  
+
   /**
    * This is where we set the grid item's absolute placement. It gets a little tricky because we want to do it
    * well when server rendering, and the only way to do that properly is to use percentage width/left because
@@ -133,7 +143,7 @@ export default class GridItem extends React.Component {
    */
   createStyle(pos: Position): {[key: string]: ?string} {
     const {usePercentages, containerWidth, useCSSTransforms} = this.props;
-  
+
     let style;
     // CSS Transforms support (default)
     if (useCSSTransforms) {
@@ -142,17 +152,17 @@ export default class GridItem extends React.Component {
     // top,left (slow)
     else {
       style = setTopLeft(pos);
-  
+
       // This is used for server rendering.
       if (usePercentages) {
         style.left = perc(pos.left / containerWidth);
         style.width = perc(pos.width / containerWidth);
       }
     }
-  
+
     return style;
   }
-  
+
   /**
    * Mix a Draggable instance into a child.
    * @param  {Element} child    Child element.
@@ -170,7 +180,7 @@ export default class GridItem extends React.Component {
       </DraggableCore>
     );
   }
-  
+
   /**
    * Mix a Resizable instance into a child.
    * @param  {Element} child    Child element.
@@ -179,10 +189,10 @@ export default class GridItem extends React.Component {
    */
   mixinResizable(child: React.Element, position: Position): React.Element {
     const {cols, x, minW, minH, maxW, maxH} = this.props;
-  
+
     // This is the max possible width - doesn't go to infinity because of the width of the window
     const maxWidth = this.calcPosition(0, 0, cols - x, 0).width;
-  
+
     // Calculate min/max constraints using our min & maxes
     const mins = this.calcPosition(0, 0, minW, minH);
     const maxes = this.calcPosition(0, 0, maxW, maxH);
@@ -201,21 +211,21 @@ export default class GridItem extends React.Component {
       </Resizable>
     );
   }
-  
+
   /**
    * Wrapper around drag events to provide more useful data.
    * All drag events call the function with the given handler name,
    * with the signature (index, x, y).
-   *
+   * 
    * @param  {String} handlerName Handler name to wrap.
    * @return {Function}           Handler function.
    */
   onDragHandler(handlerName:string): Function {
     return (e:Event, {node, position}: {node: HTMLElement, position: CorePosition}) => {
       if (!this.props[handlerName]) return;
-  
+
       let newPosition: {top: number, left: number} = {top: 0, left: 0};
-  
+
       // Get new XY
       switch (handlerName) {
         case 'onDragStart':
@@ -241,13 +251,27 @@ export default class GridItem extends React.Component {
         default:
           throw new Error('onDragHandler called with unrecognized handlerName: ' + handlerName);
       }
-  
-      const {x, y} = this.calcXY(newPosition.top, newPosition.left);
-  
-      this.props[handlerName](this.props.i, x, y, {e, node, newPosition});
+
+      const {x, y, coordX, coordY} = this.calcXY(newPosition.top, newPosition.left);
+
+      switch (handlerName) {
+        case 'onDragStart':
+          // ToDo this wont work on nested parents
+          this.props[handlerName](this.props.i, x, y, {e, node, newPosition});
+          break;
+        case 'onDrag':
+          this.props[handlerName](this.props.i, x, y, coordX, coordY, {e, node, newPosition});
+          break;
+        case 'onDragStop':
+          this.props[handlerName](this.props.i, x, y, {e, node, newPosition});
+          break;
+        default:
+          throw new Error('onDragHandler called with unrecognized handlerName: ' + handlerName);
+      }
+      //this.props[handlerName](this.props.i, x, y, coordX, coordY, {e, node, newPosition});
     };
   }
-  
+
   /**
    * Wrapper around drag events to provide more useful data.
    * All drag events call the function with the given handler name,
@@ -260,21 +284,21 @@ export default class GridItem extends React.Component {
     return (e:Event, {element, size}: {element: HTMLElement, size: Position}) => {
       if (!this.props[handlerName]) return;
       const {cols, x, i, maxW, minW, maxH, minH} = this.props;
-  
+
       // Get new XY
       let {w, h} = this.calcWH(size);
-  
+
       // Cap w at numCols
       w = Math.min(w, cols - x);
       // Ensure w is at least 1
       w = Math.max(w, 1);
-  
+
       // Min/max capping
       w = Math.max(Math.min(w, maxW), minW);
       h = Math.max(Math.min(h, maxH), minH);
-  
+
       this.setState({resizing: handlerName === 'onResizeStop' ? null : size});
-  
+
       this.props[handlerName](i, w, h, {e, element, size});
     };
   }
@@ -299,7 +323,8 @@ export default class GridItem extends React.Component {
   }
   
   render(): React.Element {
-    const {x, y, w, h, i, isDraggable, isResizable, useCSSTransforms, isInnerGrid, innerGriditems, innerGridLayout, containerWidth, margin} = this.props;
+    const {x, y, w, h, i, isDraggable, isResizable, useCSSTransforms, isInnerGrid, innerGriditems, innerGridLayout, containerWidth, margin,
+            onSuitDragStart, onSuitDrag, onSuitDragStop} = this.props;
   
     const pos = this.calcPosition(x, y, w, h, this.state);
     const child = React.Children.only(this.props.children);
@@ -327,9 +352,9 @@ export default class GridItem extends React.Component {
       // by swjo 16/06/27
       // Create the innerGrid element.
       let innerGrid = React.createElement(
-        InnerGridLayout,
+        InnerGrid,
         {ref: 'innerGridRef' + i, width: (containerWidth-(margin[0]*2)), className:'inner-grid', cols: 12, margin: [5, 5], rowHeight: 40, 
-          layout: innerGridLayout, isResizable: false, switchMode: true, onTempDrag: this.props.onTempDrag},
+          layout: innerGridLayout, isResizable: false, switchMode: true, onSuitDragStart: onSuitDragStart, onSuitDrag: onSuitDrag, onSuitDragStop: onSuitDragStop},
         _.map(innerGriditems, this.generateCard)
       );
   
@@ -349,8 +374,7 @@ export default class GridItem extends React.Component {
         style: {...this.props.style, ...child.props.style, ...this.createStyle(pos)}
       }, innerGrid);
     }
-  
-  
+
     // Resizable support. This is usually on but the user can toggle it off.
     if (isResizable) newChild = this.mixinResizable(newChild, pos);
   

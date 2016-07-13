@@ -23,7 +23,7 @@ const noop = function() {};
  * A reactive, fluid grid layout with draggable, resizable components.
  */
 
-export default class InnerGridLayout extends React.Component {
+export default class InnerGrid extends React.Component {
 
   state: State = {
     activeDrag: null,
@@ -104,7 +104,8 @@ export default class InnerGridLayout extends React.Component {
 
     this.setState({oldDragItem: cloneLayoutItem(l)});
 
-    this.props.onDragStart(layout, l, l, null, e, node);
+    // this.props.onDragStart(layout, l, l, null, e, node);
+    this.props.onSuitDragStart(layout, l, l, null, e, node);
   }
 
 
@@ -152,15 +153,6 @@ export default class InnerGridLayout extends React.Component {
         placeholder: true,
         i: fakePosition.i || i
       };
-
-      /*placeholder = {
-       w: fakePosition.w || l.w,
-       h: fakePosition.h || l.h,
-       x: fakePosition.x >= 0 ? fakePosition.x : l.x,
-       y: fakePosition.y >= 0 ? fakePosition.y : l.y,
-       placeholder: true,
-       i: fakePosition.i || i
-       };*/
     }
     else {
       placeholder = {
@@ -177,7 +169,7 @@ export default class InnerGridLayout extends React.Component {
     }
 
     //this.props.onDrag(layout, oldDragItem, l, placeholder, e, node);
-    this.props.onTempDrag(layout, oldDragItem, l, placeholder, e, node);
+    this.props.onSuitDrag(layout, oldDragItem, l, placeholder, e, node);
 
     this.setState({
       isDragging: true,
@@ -211,8 +203,9 @@ export default class InnerGridLayout extends React.Component {
       }
     }
 
-    this.props.onDragStop(layout, oldDragItem, l, null, e, node);
-    console.log(oldDragItem);
+    // this.props.onDragStop(layout, oldDragItem, l, null, e, node);
+    this.props.onSuitDragStop(layout, oldDragItem, l, null, e, node);
+    // console.log(oldDragItem);
 
     // Set state
     this.setState({
@@ -400,7 +393,7 @@ export default class InnerGridLayout extends React.Component {
   }
 }
 
-InnerGridLayout.propTypes = {
+InnerGrid.propTypes = {
   //
   // Basic props
   //
@@ -498,14 +491,14 @@ InnerGridLayout.propTypes = {
     var keys = {};
     React.Children.forEach(children, function (child) {
       if (keys[child.key]) {
-        throw new Error("Duplicate child key found! This will cause problems in ReactGridLayout.");
+        throw new Error("Duplicate child key found! This will cause problems in ReactGrid.");
       }
       keys[child.key] = true;
     });
   }
 };
 
-InnerGridLayout.defaultProps = {
+InnerGrid.defaultProps = {
   autoSize: true,
   cols: 12,
   rowHeight: 150,

@@ -3,7 +3,7 @@ import React, {PropTypes} from 'react';
 import ReactDOM from 'react-dom';
 import _ from 'lodash';
 import {autoBindHandlers, bottom, cloneLayoutItem, compact, getLayoutItem, moveElement, switchElement,
-  synchronizeLayoutWithChildren, validateLayout, calcXY, calcWH} from './utils/GridUtils';
+  synchronizeLayoutWithChildren, validateLayout, calcXY, calcWH, orderingLayout} from './utils/GridUtils';
 import GridItem from './GridItem';
 
 // Types
@@ -29,8 +29,9 @@ export default class GridCore extends React.Component {
   state: State = {
     activeDrag: null,
     isMounted: false,
-    layout: synchronizeLayoutWithChildren(this.props.layout, this.props.children,
-      this.props.cols, this.props.verticalCompact, this.props.arrangeMode),
+    layout: synchronizeLayoutWithChildren(this.props.layout, this.props.children, this.props.cols,
+                                          // Legacy support for verticalCompact: false
+                                          this.compactType(), this.props.arrangeMode),
     oldDragItem: null,
     oldResizeItem: null
   };
@@ -59,7 +60,7 @@ export default class GridCore extends React.Component {
   componentWillReceiveProps (nextProps: Object) {
     let newLayoutBase;
     // Allow parent to set layout directly.
-    if (!_.isEqual(nextProps.layout, this.props.layout)) {
+    if (!_.isEqual(nextProps.layout, this.props.layout || nextProps.compactType !== this.props.compactType)) {
       newLayoutBase = nextProps.layout;
     }
 
@@ -73,7 +74,7 @@ export default class GridCore extends React.Component {
     // We need to regenerate the layout.
     if (newLayoutBase) {
       const newLayout = synchronizeLayoutWithChildren(newLayoutBase, nextProps.children,
-        nextProps.cols, nextProps.verticalCompact, nextProps.arrangeMode);
+                                                      nextProps.cols, this.compactType(nextProps), nextProps.arrangeMode);
       this.setState({layout: newLayout});
       this.props.onLayoutChange(newLayout);
     }
@@ -83,9 +84,14 @@ export default class GridCore extends React.Component {
    * Calculates a pixel value for the container.
    * @return {String} Container height in pixels.
    */
-  containerHeight () {
+  containerHeight() {
     if (!this.props.autoSize) return;
     return bottom(this.state.layout) * (this.props.rowHeight + this.props.margin[1]) + this.props.margin[1] + 'px';
+  }
+
+  compactType(props: ?Object): CompactType {
+    if (!props) props = this.props;
+    return props.verticalCompact === false ? null : props.compactType;
   }
 
   /**
@@ -96,7 +102,7 @@ export default class GridCore extends React.Component {
    * @param {Event} e The mousedown event
    * @param {Element} node The current dragging DOM element
    */
-  onDragStart (i:string, x:number, y:number, {e, node}: DragEvent) {
+  onDragStart(i:string, x:number, y:number, {e, node}: DragEvent) {
     const {layout} = this.state;
     var l = getLayoutItem(layout, i);
     if (!l) return;
@@ -114,16 +120,25 @@ export default class GridCore extends React.Component {
    * @param {Event} e The mousedown event
    * @param {Element} node The current dragging DOM element
    */
-  onDrag (i:string, x:number, y:number, {e, node}: DragEvent) {
+  onDrag(i:string, x:number, y:number, coordX, coordY, {e, node}: DragEvent) {
     const {oldDragItem} = this.state;
 
     let {layout} = this.state;
-    var l = getLayoutItem(layout, i);
+    const {cols} = this.props;
+    const l = getLayoutItem(layout, i);
     if (!l) return;
-    var placeholder;
+    let placeholder;
+
+    // console.log(oldDragItem);
+    // console.log(x);
+    // console.log(y);
+    // console.log('x:', coordX - l.x);
+    // console.log('y:', coordY - l.y);
+    const isMergeArea = (Math.abs(coordX - l.x) < 1.2) && (Math.abs(coordY - l.y) < 1.2);
 
     // Create placeholder (display only)
-    if (!this.props.autoMove || this.props.switchMode) {
+     if (isMergeArea) {
+    //if (Math.abs(oldDragItem.x - x) <= 1 && Math.abs(oldDragItem.y - y) <= 1) {
       var fakePosition = {};
       layout.some((l) => {
         // l is an item laying on the parent grid
@@ -151,16 +166,7 @@ export default class GridCore extends React.Component {
         i: fakePosition.i || i
       };
 
-      /*placeholder = {
-       w: fakePosition.w || l.w,
-       h: fakePosition.h || l.h,
-       x: fakePosition.x >= 0 ? fakePosition.x : l.x,
-       y: fakePosition.y >= 0 ? fakePosition.y : l.y,
-       placeholder: true,
-       i: fakePosition.i || i
-       };*/
-    }
-    else {
+    } else {
       placeholder = {
         w: l.w,
         h: l.h,
@@ -171,14 +177,15 @@ export default class GridCore extends React.Component {
       };
 
       // Move the element to the dragged location.
-      layout = moveElement(layout, l, x, y, true /* isUserAction */);
+      //layout = moveElement(layout, l, x, y, true /* isUserAction */);
+      layout = moveElement(layout, l, x, y, true /* isUserAction */, this.compactType(), cols);
     }
 
     this.props.onDrag(layout, oldDragItem, l, placeholder, e, node);
 
     this.setState({
       isDragging: true,
-      layout: compact(layout, this.props.verticalCompact),
+      layout: compact(layout, this.compactType(), cols),
       activeDrag: placeholder
     });
   }
@@ -191,15 +198,16 @@ export default class GridCore extends React.Component {
    * @param {Event} e The mousedown event
    * @param {Element} node The current dragging DOM element
    */
-  onDragStop (i:string, x:number, y:number, {e, node}: DragEvent) {
+  onDragStop(i:string, x:number, y:number, {e, node}: DragEvent) {
     const {oldDragItem} = this.state;
     let {layout} = this.state;
+    const {cols} = this.props;
     let l = getLayoutItem(layout, i);
     if (!l) return;
 
     // Move the element here
     if (!this.props.switchMode) {
-      layout = moveElement(layout, l, x, y, true /* isUserAction */);
+      layout = moveElement(layout, l, x, y, true /* isUserAction */, this.compactType(), cols);
     }
     else {
       if (this.state.activeDrag) {
@@ -219,7 +227,7 @@ export default class GridCore extends React.Component {
     this.setState({
       isDragging: false,
       activeDrag: null,
-      layout: compact(layout, this.props.verticalCompact), //draft로 Addit 이동시 standby List 압축 취소 방지
+      layout: compact(layout, this.compactType(), cols),
       oldDragItem: null
     });
     console.log('drag stop', layout);
@@ -227,7 +235,7 @@ export default class GridCore extends React.Component {
     this.props.onLayoutChange(this.state.layout);
   }
 
-  onResizeStart (i:string, w:number, h:number, {e, node}: ResizeEvent) {
+  onResizeStart(i:string, w:number, h:number, {e, node}: ResizeEvent) {
     const {layout} = this.state;
     var l = getLayoutItem(layout, i);
     if (!l) return;
@@ -237,8 +245,9 @@ export default class GridCore extends React.Component {
     this.props.onResizeStart(layout, l, l, null, e, node);
   }
 
-  onResize (i:string, w:number, h:number, {e, node}: ResizeEvent) {
+  onResize(i:string, w:number, h:number, {e, node}: ResizeEvent) {
     const {layout, oldResizeItem} = this.state;
+    const {cols} = this.props;
     var l = getLayoutItem(layout, i);
     if (!l) return;
 
@@ -260,13 +269,14 @@ export default class GridCore extends React.Component {
 
     // Re-compact the layout and set the drag placeholder.
     this.setState({
-      layout: compact(layout, this.props.verticalCompact),
+      layout: compact(layout, this.compactType(), cols),
       activeDrag: placeholder
     });
   }
 
   onResizeStop (i:string, w:number, h:number, {e, node}: ResizeEvent) {
     const {layout, oldResizeItem} = this.state;
+    const {cols} = this.props;
     var l = getLayoutItem(layout, i);
     l.moved = true;
 
@@ -275,11 +285,11 @@ export default class GridCore extends React.Component {
     // Set state
     this.setState({
       activeDrag: null,
-      layout: compact(layout, this.props.verticalCompact),
+      layout: compact(layout, this.compactType(), cols),
       oldResizeItem: null
     });
 
-    this.props.onLayoutChange(this.state.layout);
+    this.props.onLayoutChange(layout);
   }
 
 
@@ -289,7 +299,7 @@ export default class GridCore extends React.Component {
    */
   placeholder () {
     const {activeDrag} = this.state;
-    if (this.props.onBlendingFrom || !activeDrag) return null;
+    if (!activeDrag) return null;
     const {width, cols, margin, rowHeight, maxRows, useCSSTransforms} = this.props;
 
     // {...this.state.activeDrag} is pretty slow, actually
@@ -364,17 +374,14 @@ export default class GridCore extends React.Component {
    * @param  {Element} child React element.
    * @return {Element}       Element wrapped in draggable and properly placed.
    */
-  processGridItem(child:React.Element) {
-    if (!child.key) {
-      console.warn('Grid item must have child key. Please check out this.');
-      return;
-    }
+  processGridItem(child: React.Element): ?React.Element {
+    if (!child.key) return;
     const l = getLayoutItem(this.state.layout, child.key);
     if (!l) return null;
     const { width, cols, margin, rowHeight, maxRows, isDraggable, isResizable,
-      useCSSTransforms, draggableCancel, draggableHandle, generateGridCard, onDrag } = this.props;
+      useCSSTransforms, draggableCancel, draggableHandle, generateGridCard, onDragStart, onDrag, onDragStop } = this.props;
 
-// Parse 'static'. Any properties defined directly on the grid item will take precedence.
+    // Parse 'static'. Any properties defined directly on the grid item will take precedence.
     const draggable = Boolean(!l.static && isDraggable && (l.isDraggable || l.isDraggable == null));
     const resizable = Boolean(!l.static && isResizable && (l.isResizable || l.isResizable == null));
 
@@ -395,8 +402,10 @@ export default class GridCore extends React.Component {
         onResizeStart={this.onResizeStart}
         onResize={this.onResize}
         onResizeStop={this.onResizeStop}
-        
-        onTempDrag={this.props.onDrag}
+
+        onSuitDragStart={onDragStart}
+        onSuitDrag={onDrag}
+        onSuitDragStop={onDragStop}
 
         isDraggable={draggable && !l.ig}
         isResizable={resizable}
@@ -485,6 +494,10 @@ GridCore.propTypes = {
 
   // If true, the layout will compact vertically
   verticalCompact: PropTypes.bool,
+
+  // Choose vertical or hotizontal compaction
+  compactType: PropTypes.oneOf(['vertical', 'horizontal']),
+  
   // If true, the layout will arrange itself !additor
   arrangeMode: PropTypes.bool,
 
