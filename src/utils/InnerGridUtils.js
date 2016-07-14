@@ -1,10 +1,13 @@
 /**
  *
- * @param cardNum
- * @param density
+ * @param targetItem
+ * @param targetGrid
  * @returns {{}}
  */
-export function addInnerGrid(cardNum: number, width: number, height: number) {
+export function applyDefaultInnerGridLayout(targetGrid) {
+
+  //targetGrid.igItems.push(targetItem);
+  /*
   const newInnerGridItem = {};
 
   newInnerGridItem.ig = true;
@@ -24,13 +27,39 @@ export function addInnerGrid(cardNum: number, width: number, height: number) {
     emptyItem.i = 'empty-card-slot-' + i;
 
     newInnerGridItem.igItems.push(emptyItem);
-  }
+  }*/
 
-  switch (cardNum) {
-    case 2 :
+  switch (targetGrid.igItems.length) {
+    case 3 :
+      targetGrid.igLayout = [
+        {
+          x: 0,
+          y: 0,
+          w: 4,
+          h: 6,
+          ig: false,
+          i: targetGrid.igItems[0].i
+        },
+        {
+          x: 4,
+          y: 0,
+          w: 4,
+          h: 6,
+          ig: false,
+          i: targetGrid.igItems[1].i
+        },
+        {
+          x: 8,
+          y: 0,
+          w: 4,
+          h: 6,
+          ig: false,
+          i: targetGrid.igItems[2].i
+        },
+      ];
       break;
     case 6 :
-      newInnerGridItem.igLayout = [
+      targetGrid.igLayout = [
         {
           x: 0,
           y: 0,
@@ -80,7 +109,7 @@ export function addInnerGrid(cardNum: number, width: number, height: number) {
       break;
   }
 
-  return newInnerGridItem;
+  return targetGrid;
 }
 
 /**
@@ -121,6 +150,34 @@ export function createInnerGrid(items, pos, width: number, height: number) {
           h: 6,
           ig: false,
           i: items[1].i
+        },
+      ];
+      break;
+    case 3 :
+      newInnerGridItem.igLayout = [
+        {
+          x: 0,
+          y: 0,
+          w: 4,
+          h: 6,
+          ig: false,
+          i: items[0].i
+        },
+        {
+          x: 4,
+          y: 0,
+          w: 4,
+          h: 6,
+          ig: false,
+          i: items[1].i
+        },
+        {
+          x: 8,
+          y: 0,
+          w: 4,
+          h: 6,
+          ig: false,
+          i: items[2].i
         },
       ];
       break;

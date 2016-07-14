@@ -57,6 +57,7 @@ export default class InnerGrid extends React.Component {
 
   componentWillReceiveProps (nextProps: Object) {
     let newLayoutBase;
+  console.log('nextProps:', nextProps);
     // Allow parent to set layout directly.
     if (!_.isEqual(nextProps.layout, this.props.layout)) {
       newLayoutBase = nextProps.layout;
@@ -77,7 +78,6 @@ export default class InnerGrid extends React.Component {
       this.props.onLayoutChange(newLayout);
     }
   }
-
 
   /**
    * Calculates a pixel value for the container.
@@ -178,7 +178,6 @@ export default class InnerGrid extends React.Component {
     });
   }
 
-
   /**
    * When dragging stops, figure out which position the element is closest to and update its x and y.
    * @param  {String} i Index of the child.
@@ -211,7 +210,7 @@ export default class InnerGrid extends React.Component {
     this.setState({
       isDragging: false,
       activeDrag: null,
-      layout: compact(layout, this.props.verticalCompact), //draft로 Addit 이동시 standby List 압축 취소 방지
+      //layout: compact(layout, this.props.verticalCompact), //draft로 Addit 이동시 standby List 압축 취소 방지
       oldDragItem: null
     });
     console.log('drag stop', layout);

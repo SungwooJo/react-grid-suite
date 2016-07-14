@@ -349,7 +349,7 @@ export function moveElement(layout: Layout, l: LayoutItem, x: ?number, y: ?numbe
   // Short-circuit if nothing to do.
   if (l.y === y && l.x === x) return layout;
 
-  const movingUp = y && l.y > y;
+  // const movingUp = y && l.y > y;
   // This is quite a bit faster than extending the object
   // if (typeof x === 'number') l.x = x;
   // if (typeof y === 'number') l.y = y;
@@ -375,7 +375,7 @@ export function moveElement(layout: Layout, l: LayoutItem, x: ?number, y: ?numbe
     // Short circuit so we can't infinite loop
     if (collision.moved) continue;
 
-    // This makes it feel a bit more precise by waiting to swap for just a bit when moving up.
+    // This makes it feel a bit more precise by waiting   to swap for just a bit when moving up.
     if (l.y > collision.y && l.y - collision.y > collision.h / 4) continue;
     if (l.x > collision.x && l.x - collision.x > collision.w / 4) continue;
 
