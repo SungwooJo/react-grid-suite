@@ -199,7 +199,6 @@ class GridSuite extends React.Component {
   onDragStop (layout, oldDragItem, l, placeholder, e, node) {
 
     const { currentGrid, belowItem, items } = this.state;
-    const tempItems = items;
 
     // drag stop destinations
     // 1. Addit
@@ -221,7 +220,7 @@ class GridSuite extends React.Component {
       console.log('merge is ready!');
       this.mergeItems(oldDragItem.i, items[itemIndex].i);
 
-    } else if (currentGrid.props.className !== 'inner-grid' && items[itemIndex].ig) {
+    } else if (currentGrid.props.className !== 'inner-grid' && items[itemIndex].ig && !l.ig) {
       console.log('adding item is ready');
       let newItems = Update(this.state.items, {
         [itemIndex]: {igItems: {$push: [oldDragItem]}}

@@ -195,40 +195,56 @@ export function correctBounds(layout: Layout, bounds: {cols: number}): Layout {
  */
 export function orderingLayout(sortedLayout, x, y, movingItem, cols) {
 
-  const laidIndex = _.findIndex(sortedLayout, (l) => {
-    return (l.x === x && l.y === y);
-  });
+  // if movingItem is an innerGrid
+  // else (moving item is an item)
 
-  if (laidIndex < 0 || sortedLayout[laidIndex].ig) {
-    return sortedLayout;
-  }
-
-  const movingIndex = _.findIndex(sortedLayout, movingItem);
-
-  const movingUp = laidIndex < movingIndex;
-
-  if (movingUp) {
-    for(let i = laidIndex; i < movingIndex; i++) {
-      if (sortedLayout[i].x + 1 < cols) {
-        sortedLayout[i].x = sortedLayout[i].x + 1;
-      } else {
-        sortedLayout[i].y = sortedLayout[i].y + 1;
-        sortedLayout[i].x = 0;
-      }
+  // if movingItem is innerGrid
+  if (movingItem.ig) {
+    if (movingItem.y !== y) {
+      sortedLayout.forEach((l) => {
+        if (l.y === y) {
+          l.y = movingItem.y;
+        }
+      });
+      movingItem.y = y;
     }
+
   } else {
-    for(let i = movingIndex + 1; i <= laidIndex; i++) {
-      if (sortedLayout[i].x - 1 >= 0) {
-        sortedLayout[i].x = sortedLayout[i].x - 1;
-      } else {
-        sortedLayout[i].y = sortedLayout[i].y - 1;
-        sortedLayout[i].x = cols - 1;
+    const laidIndex = _.findIndex(sortedLayout, (l) => {
+      return (l.x === x && l.y === y);
+    });
+
+    if (laidIndex < 0 || sortedLayout[laidIndex].ig) {
+      return sortedLayout;
+    }
+
+    const movingIndex = _.findIndex(sortedLayout, movingItem);
+
+    const movingUp = laidIndex < movingIndex;
+
+    if (movingUp) {
+      for(let i = laidIndex; i < movingIndex; i++) {
+        if (sortedLayout[i].x + 1 < cols) {
+          sortedLayout[i].x = sortedLayout[i].x + 1;
+        } else {
+          sortedLayout[i].y = sortedLayout[i].y + 1;
+          sortedLayout[i].x = 0;
+        }
+      }
+    } else {
+      for(let i = movingIndex + 1; i <= laidIndex; i++) {
+        if (sortedLayout[i].x - 1 >= 0) {
+          sortedLayout[i].x = sortedLayout[i].x - 1;
+        } else {
+          sortedLayout[i].y = sortedLayout[i].y - 1;
+          sortedLayout[i].x = cols - 1;
+        }
       }
     }
-  }
 
-  sortedLayout[movingIndex].x = x;
-  sortedLayout[movingIndex].y = y;
+    sortedLayout[movingIndex].x = x;
+    sortedLayout[movingIndex].y = y;
+  }
 
   return sortedLayout;
 }

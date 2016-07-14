@@ -481,7 +481,7 @@ export default class GridCore extends React.Component {
         onSuitDrag={onDrag}
         onSuitDragStop={onDragStop}
 
-        isDraggable={draggable && !l.ig}
+        isDraggable={draggable}
         isResizable={resizable}
         useCSSTransforms={useCSSTransforms && this.state.isMounted}
         usePercentages={!this.state.isMounted}
