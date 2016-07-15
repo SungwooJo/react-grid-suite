@@ -341,7 +341,7 @@ class GridSuite extends React.Component {
 
   render() {
     const {onLayoutChange, generateGridView, ...other} = this.props;
-    const {currentGrid, innerGrids, items} = this.state;
+    const {currentGrid, innerGrids, items, dragEvt} = this.state;
 
     return (
       <div className="additor-grid-manager-wrapper">
@@ -353,6 +353,8 @@ class GridSuite extends React.Component {
           innerGrids={innerGrids}
           compactType={'horizontal'}
           layout={items}
+
+          isResizable={false}
 
           onDragStart={this.onDragStart}
           onDrag={this.onDrag}

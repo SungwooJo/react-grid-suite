@@ -18,7 +18,8 @@ export default class GridItem extends React.Component {
   state: State = {
     resizing: null,
     dragging: null,
-    className: ''
+    className: '',
+    isInnerGridDragging: false,
   };
 
   constructor (props: Object): void {
@@ -96,12 +97,6 @@ export default class GridItem extends React.Component {
     let x = Math.round(coordX);
     let y = Math.round(coordY);
 
-    const isXMergeArea = (Math.abs(coordX - x) > 0.05);
-    const isYMergeArea = (Math.abs(coordY - y) > 0.05);
-
-    // let isMergeArea = isXMergeArea || isYMergeArea;
-    // let isMergeArea = true;
-
     // Capping
     x = Math.max(Math.min(x, cols - w), 0);
     y = Math.max(Math.min(y, maxRows - h), 0);
@@ -175,7 +170,28 @@ export default class GridItem extends React.Component {
         onDrag={this.onDragHandler('onDrag')}
         onStop={this.onDragHandler('onDragStop')}
         handle={this.props.handle}
-        cancel={".react-resizable-handle" + (this.props.cancel ? "," + this.props.cancel : "")}>
+        // cancel={".react-resizable-handle" + (this.props.cancel ? "," + this.props.cancel : "")}
+      >
+        {child}
+      </DraggableCore>
+    );
+  }
+
+  /**
+   * Mix a Draggable instance into a child.
+   * @param  {Element} child    Child element.
+   * @return {Element}          Child wrapped in Draggable.
+   */
+  mixinDraggableForInner(child: React.Element): React.Element {
+    return (
+      <DraggableCore
+        onStart={this.onDragHandler('onDragStart')}
+        onDrag={this.onDragHandler('onDrag')}
+        onStop={this.onDragHandler('onDragStop')}
+        handle={this.props.handle}
+        cancel={".inner-grid-item, .inner-grid, span"}
+        // cancel={".react-resizable-handle" + (this.props.cancel ? "," + this.props.cancel : "")}
+      >
         {child}
       </DraggableCore>
     );
@@ -347,6 +363,12 @@ export default class GridItem extends React.Component {
         // We can set the width and height on the child, but unfortunately we can't set the position.
         style: {...this.props.style, ...child.props.style, ...this.createStyle(pos)}
       });
+
+      // Resizable support. This is usually on but the user can toggle it off.
+      if (isResizable) newChild = this.mixinResizable(newChild, pos);
+
+      // Draggable support. This is always on, except for with placeholders.
+      if (isDraggable) newChild = this.mixinDraggable(newChild);
     }
     else {
       // by swjo 16/06/27
@@ -354,7 +376,7 @@ export default class GridItem extends React.Component {
       let innerGrid = React.createElement(
         InnerGrid,
         {ref: 'innerGridRef' + i, width: (containerWidth-(margin[0]*2)), className:'inner-grid', cols: 12, margin: [5, 5], rowHeight: innerGriditems.length < 4 ? 25 : 50,
-          layout: innerGridLayout, isResizable: false, switchMode: true, onSuitDragStart: onSuitDragStart, onSuitDrag: onSuitDrag, onSuitDragStop: onSuitDragStop},
+          layout: innerGridLayout, isDragging: true, isResizable: false, switchMode: true, onSuitDragStart: onSuitDragStart, onSuitDrag: onSuitDrag, onSuitDragStop: onSuitDragStop},
         _.map(innerGriditems, this.generateCard)
       );
   
@@ -373,13 +395,13 @@ export default class GridItem extends React.Component {
         // We can set the width and height on the child, but unfortunately we can't set the position.
         style: {...this.props.style, ...child.props.style, ...this.createStyle(pos)}
       }, innerGrid);
-    }
 
-    // Resizable support. This is usually on but the user can toggle it off.
-    if (isResizable) newChild = this.mixinResizable(newChild, pos);
-  
-    // Draggable support. This is always on, except for with placeholders.
-    if (isDraggable) newChild = this.mixinDraggable(newChild);
+      // Resizable support. This is usually on but the user can toggle it off.
+      if (isResizable) newChild = this.mixinResizable(newChild, pos);
+
+      // Draggable support. This is always on, except for with placeholders.
+      if (isDraggable) newChild = this.mixinDraggableForInner(newChild);
+    }
   
     return newChild;
   }

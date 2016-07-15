@@ -323,6 +323,7 @@ export default class InnerGrid extends React.Component {
 
     return (
       <GridItem
+        className={'inner-grid-item'}
         containerWidth={width}
         cols={cols}
         margin={margin}
