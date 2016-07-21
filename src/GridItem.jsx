@@ -170,7 +170,7 @@ export default class GridItem extends React.Component {
         onDrag={this.onDragHandler('onDrag')}
         onStop={this.onDragHandler('onDragStop')}
         handle={this.props.handle}
-        // cancel={".react-resizable-handle" + (this.props.cancel ? "," + this.props.cancel : "")}
+        cancel={".react-resizable-handle" + (this.props.cancel ? "," + this.props.cancel : "")}
       >
         {child}
       </DraggableCore>
@@ -320,7 +320,7 @@ export default class GridItem extends React.Component {
   }
   
   componentDidMount () {
-    console.log(this.refs['innerGridRef' + this.props.i]);
+    // console.log(this.refs['innerGridRef' + this.props.i]);
   
     let innerGridRef = this.refs['innerGridRef' + this.props.i];
     if (innerGridRef) {
@@ -340,7 +340,7 @@ export default class GridItem extends React.Component {
   
   render(): React.Element {
     const {x, y, w, h, i, isDraggable, isResizable, useCSSTransforms, isInnerGrid, innerGriditems, innerGridLayout, containerWidth, margin,
-            onSuitDragStart, onSuitDrag, onSuitDragStop} = this.props;
+            onSuiteDragStart, onSuiteDrag, onSuiteDragStop, belowItem, onDragStart, onDrag, onDragStop} = this.props;
   
     const pos = this.calcPosition(x, y, w, h, this.state);
     const child = React.Children.only(this.props.children);
@@ -375,8 +375,9 @@ export default class GridItem extends React.Component {
       // Create the innerGrid element.
       let innerGrid = React.createElement(
         InnerGrid,
-        {ref: 'innerGridRef' + i, width: (containerWidth-(margin[0]*2)), className:'inner-grid', cols: 12, margin: [5, 5], rowHeight: innerGriditems.length < 4 ? 25 : 50,
-          layout: innerGridLayout, isDragging: true, isResizable: false, switchMode: true, onSuitDragStart: onSuitDragStart, onSuitDrag: onSuitDrag, onSuitDragStop: onSuitDragStop},
+        {ref: 'innerGridRef' + i, width: (containerWidth-(margin[0]*2)), className:'inner-grid', cols: 12, margin: [5, 5], rowHeight: innerGriditems.length < 4 ? 25 : 50, belowItem: belowItem,
+          layout: innerGridLayout, isDragging: true, isResizable: false, switchMode: true, onSuiteDragStart: onSuiteDragStart, onSuiteDrag: onSuiteDrag, onSuiteDragStop: onSuiteDragStop,
+          onCoreDragStart: onDragStart, onCoreDrag: onDrag, onCoreDragStop: onDragStop, onCoreDragHandler: this.onDragHandler},
         _.map(innerGriditems, this.generateCard)
       );
   

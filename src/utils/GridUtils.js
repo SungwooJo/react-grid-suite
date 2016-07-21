@@ -188,75 +188,69 @@ export function correctBounds(layout: Layout, bounds: {cols: number}): Layout {
 }
 
 /**
+ *
+ * @param layout
+ * @param cols
+ */
+export function splitInnerGrid(layout, innerGridKey) {
+
+  // find index innerGrid
+  // save item in the innerGrid
+  // remove innerGrid
+  // push item (pos: x = 0, y = removed innerGrid y)
+  // clean layout
+  
+}
+
+/**
  * by swjo 16.7.13
  * @param layout
  * @param bounds
  * @returns {Layout}
  */
-export function orderingLayout(sortedLayout, x, y, movingItem, cols) {
+export function createEmptySlot(sortedLayout, x, y, cols) {
 
   // if movingItem is an innerGrid
   // else (moving item is an item)
+  // debugger;
+  const laidIndex = _.findIndex(sortedLayout, (l) => {
+    return (l.x === x && l.y === y);
+  });
 
-  // if movingItem is innerGrid
-  if (movingItem.ig) {
-    if (movingItem.y !== y) {
-      sortedLayout.forEach((l) => {
-        if (l.y === y) {
-          l.y = movingItem.y;
-        }
-      });
-      movingItem.y = y;
+  if (laidIndex < 0 || sortedLayout[laidIndex].ig) {
+    return sortedLayout;
+  }
+
+  for(let i = laidIndex; i < sortedLayout.length; i++) {
+    if (sortedLayout[i].ig) {
+      continue;
     }
-
-  } else {
-    const laidIndex = _.findIndex(sortedLayout, (l) => {
-      return (l.x === x && l.y === y);
-    });
-
-    if (laidIndex < 0 || sortedLayout[laidIndex].ig) {
-      return sortedLayout;
-    }
-
-    const movingIndex = _.findIndex(sortedLayout, movingItem);
-
-    const movingUp = laidIndex < movingIndex;
-
-    if (movingUp) {
-      for(let i = laidIndex; i < movingIndex; i++) {
-        if (sortedLayout[i].x + 1 < cols) {
-          sortedLayout[i].x = sortedLayout[i].x + 1;
-        } else {
-          sortedLayout[i].y = sortedLayout[i].y + 1;
-          sortedLayout[i].x = 0;
-        }
-      }
+    if (sortedLayout[i].x + 1 < cols) {
+      sortedLayout[i].x = sortedLayout[i].x + 1;
     } else {
-      for(let i = movingIndex + 1; i <= laidIndex; i++) {
-        if (sortedLayout[i].x - 1 >= 0) {
-          sortedLayout[i].x = sortedLayout[i].x - 1;
-        } else {
-          sortedLayout[i].y = sortedLayout[i].y - 1;
-          sortedLayout[i].x = cols - 1;
-        }
+      // check if meet innerGrid
+      if (i+1 < sortedLayout.length && sortedLayout[i+1].ig) {
+        sortedLayout[i].y = sortedLayout[i].y + 2;
+      } else {
+        sortedLayout[i].y = sortedLayout[i].y + 1;
       }
+      sortedLayout[i].x = 0;
     }
-
-    sortedLayout[movingIndex].x = x;
-    sortedLayout[movingIndex].y = y;
   }
 
   return sortedLayout;
 }
 
-export function arrangeLayout(layout: Layout, bounds: {cols: number}): Layout {
+export function arrangeLayout(layout: Layout, cols: number): Layout {
 
   const tmpQueue = [];
   let col = 0;
   let row = 0;
-  for (let i = 0, len = layout.length; i < len; i++) {
+  let sortedLayout = sortLayoutItemsByRowCol(layout);
+
+  for (let i = 0, len = sortedLayout.length; i < len; i++) {
     let skip = false;
-    const l = layout[i];
+    const l = sortedLayout[i];
     // Overflows right
 
     tmpQueue.some((empty) => {
@@ -275,12 +269,12 @@ export function arrangeLayout(layout: Layout, bounds: {cols: number}): Layout {
       continue;
     }
 
-    if (col + l.w > bounds.cols) {
+    if (col + l.w > cols) {
       let empty = {
         i: i,
         x: col,
         y: row,
-        w: bounds.cols - col,
+        w: cols - col,
       };
       tmpQueue.push(empty);
       col = 0;
@@ -291,12 +285,12 @@ export function arrangeLayout(layout: Layout, bounds: {cols: number}): Layout {
     l.y = row;
 
     col = col + l.w;
-    if (col >= bounds.cols) {
+    if (col >= cols) {
       col = 0;
       row = row + 1;
     }
   }
-  return layout;
+  return sortedLayout;
 }
 
 /**
@@ -405,6 +399,99 @@ export function moveElement(layout: Layout, l: LayoutItem, x: ?number, y: ?numbe
 
   return layout;
 }
+
+/**
+ * Move an element. Responsible for doing cascading movements of other elements.
+ *
+ */
+export function moveElementForNewItem(layout: Layout, l: LayoutItem, x: ?number, y: ?number,
+  isUserAction: ?boolean, compactType: CompactType, cols: number): Layout {
+  if (l.static) return layout;
+
+  // Short-circuit if nothing to do.
+  if (l.y === y && l.x === x) return layout;  
+
+  let newLayout = cloneLayout(layout);
+  let sorted = sortLayoutItemsByRowCol(newLayout);
+  layout = createEmptySlot(sorted, x, y, cols);
+
+  return layout;
+}
+
+/**
+ * by swjo 16.7.13
+ * @param layout
+ * @param bounds
+ * @returns {Layout}
+ */
+export function orderingLayout(sortedLayout, x, y, movingItem, cols) {
+
+  // if movingItem is an innerGrid
+  // else (moving item is an item)
+
+  // if movingItem is innerGrid
+  if (movingItem.ig) {
+    if (movingItem.y !== y) {
+      sortedLayout.forEach((l) => {
+        if (l.y === y) {
+          l.y = movingItem.y;
+        }
+      });
+      movingItem.y = y;
+    }
+
+  } else {
+    const laidIndex = _.findIndex(sortedLayout, (l) => {
+      return (l.x === x && l.y === y);
+    });
+
+    if (laidIndex < 0 || sortedLayout[laidIndex].ig) {
+      return sortedLayout;
+    }
+
+    const movingIndex = _.findIndex(sortedLayout, movingItem);
+
+    const movingUp = laidIndex < movingIndex;
+
+    if (movingUp) {
+      for(let i = laidIndex; i < movingIndex; i++) {
+        if (sortedLayout[i].x + 1 < cols) {
+          sortedLayout[i].x = sortedLayout[i].x + 1;
+        } else {
+          sortedLayout[i].y = sortedLayout[i].y + 1;
+          sortedLayout[i].x = 0;
+        }
+      }
+    } else {
+      for(let i = movingIndex + 1; i <= laidIndex; i++) {
+        if (sortedLayout[i].x - 1 >= 0) {
+          sortedLayout[i].x = sortedLayout[i].x - 1;
+        } else {
+          sortedLayout[i].y = sortedLayout[i].y - 1;
+          sortedLayout[i].x = cols - 1;
+        }
+      }
+    }
+
+    sortedLayout[movingIndex].x = x;
+    sortedLayout[movingIndex].y = y;
+  }
+
+  return sortedLayout;
+}
+
+/**
+ *
+ * @param layout
+ * @param cols
+ */
+export function cleanLayout(layout, cols) {
+
+  // check empty slot in layout
+  // check innerGrid has only 1 item
+  //
+}
+
 
 /**
  * added at 2015.6.9 by swjo
@@ -600,7 +687,7 @@ export function synchronizeLayoutWithChildren(initialLayout: Layout, children: A
 
   // Correct the layout.
   if (arrangeMode) {
-    layout = arrangeLayout(layout, {cols: cols});
+    layout = arrangeLayout(layout, cols);
   }
   else {
     layout = correctBounds(layout, {cols: cols});
@@ -701,4 +788,22 @@ export function calcWH(props, {height, width}: {height: number, width: number}):
   w = Math.max(Math.min(w, cols - x), 0);
   h = Math.max(Math.min(h, maxRows - y), 0);
   return {w, h};
+}
+
+/**
+ * 
+ * @param layout
+ * @param itemKeys
+ * @returns {*}
+ */
+export function removeItem(layout, itemKeys) {
+
+  itemKeys.forEach((i) => {
+    /*
+     remove items
+     */
+    layout = _.reject(layout, {i: i});
+  });
+
+  return layout;
 }

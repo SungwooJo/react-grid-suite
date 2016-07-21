@@ -52,12 +52,13 @@ export default class InnerGrid extends React.Component {
     // Call back with layout on mount. This should be done after correcting the layout width
     // to ensure we don't rerender with the wrong width.
     //this.props.onLayoutChange(this.state.layout);
+    this._isMounted = true;
     this.setState({ isMounted: true });
   }
 
   componentWillReceiveProps (nextProps: Object) {
     let newLayoutBase;
-  console.log('nextProps:', nextProps);
+  // console.log('nextProps:', nextProps);
     // Allow parent to set layout directly.
     if (!_.isEqual(nextProps.layout, this.props.layout)) {
       newLayoutBase = nextProps.layout;
@@ -77,6 +78,10 @@ export default class InnerGrid extends React.Component {
       this.setState({layout: newLayout});
       this.props.onLayoutChange(newLayout);
     }
+  }
+
+  componentWillUnmount() {
+    this._isMounted = false;
   }
 
   /**
@@ -104,8 +109,9 @@ export default class InnerGrid extends React.Component {
 
     this.setState({oldDragItem: cloneLayoutItem(l)});
 
+    // this.props.onCoreDragHandler('onDragStart');
     // this.props.onDragStart(layout, l, l, null, e, node);
-    this.props.onSuitDragStart(layout, l, l, null, e, node);
+    this.props.onSuiteDragStart(layout, l, l, null, e, node);
   }
 
 
@@ -124,9 +130,10 @@ export default class InnerGrid extends React.Component {
     var l = getLayoutItem(layout, i);
     if (!l) return;
     var placeholder;
-    console.log('l', l);
-    console.log('x:', x);
-    console.log('y:', y);
+    // console.log('l', l);
+    // console.log('x:', x);
+    // console.log('y:', y);
+    // console.log(this.props.belowItem);
 
     // Create placeholder (display only)
     if (!this.props.autoMove || this.props.switchMode) {
@@ -168,8 +175,9 @@ export default class InnerGrid extends React.Component {
       layout = moveElement(layout, l, x, y, true /* isUserAction */);
     }
 
+    // this.props.onCoreDragHandler('onDrag');
     //this.props.onDrag(layout, oldDragItem, l, placeholder, e, node);
-    this.props.onSuitDrag(layout, oldDragItem, l, placeholder, e, node);
+    this.props.onSuiteDrag(layout, oldDragItem, l, placeholder, e, node);
 
     this.setState({
       isDragging: true,
@@ -187,7 +195,7 @@ export default class InnerGrid extends React.Component {
    * @param {Element} node The current dragging DOM element
    */
   onDragStop (i:string, x:number, y:number, {e, node}: DragEvent) {
-    const {oldDragItem} = this.state;
+    const {oldDragItem, isMounted} = this.state;
     let {layout} = this.state;
     let l = getLayoutItem(layout, i);
     if (!l) return;
@@ -203,19 +211,20 @@ export default class InnerGrid extends React.Component {
     }
 
     // this.props.onDragStop(layout, oldDragItem, l, null, e, node);
-    this.props.onSuitDragStop(layout, oldDragItem, l, null, e, node);
-    // console.log(oldDragItem);
+    // this.props.onCoreDragHandler('onDragStop');
+    this.props.onSuiteDragStop(layout, oldDragItem, l, null, e, node);
+    if (this._isMounted) {
+      // Set state
+      this.setState({
+        isDragging: false,
+        activeDrag: null,
+        //layout: compact(layout, this.props.verticalCompact), //draft로 Addit 이동시 standby List 압축 취소 방지
+        oldDragItem: null
+      });
+      // console.log('drag stop', layout);
 
-    // Set state
-    this.setState({
-      isDragging: false,
-      activeDrag: null,
-      //layout: compact(layout, this.props.verticalCompact), //draft로 Addit 이동시 standby List 압축 취소 방지
-      oldDragItem: null
-    });
-    console.log('drag stop', layout);
-
-    this.props.onLayoutChange(this.state.layout);
+      this.props.onLayoutChange(this.state.layout);
+    }
   }
 
   onResizeStart (i:string, w:number, h:number, {e, node}: ResizeEvent) {
@@ -363,7 +372,7 @@ export default class InnerGrid extends React.Component {
   }
 
   processComponentRef (ref:Element) {
-    console.log('processComponentRef: ' + ref);
+    // console.log('processComponentRef: ' + ref);
     if (ref) {
       //let rect = ref.getBoundingClientRect();
       this.props.onLayoutResize(ref);

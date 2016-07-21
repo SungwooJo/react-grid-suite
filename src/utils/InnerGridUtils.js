@@ -1,3 +1,7 @@
+
+import _ from 'lodash';
+import Update from 'react-addons-update';
+
 /**
  *
  * @param targetItem
@@ -30,6 +34,26 @@ export function applyDefaultInnerGridLayout(targetGrid) {
   }*/
 
   switch (targetGrid.igItems.length) {
+    case 2 :
+      targetGrid.igLayout = [
+        {
+          x: 0,
+          y: 0,
+          w: 6,
+          h: 6,
+          ig: false,
+          i: targetGrid.igItems[0].i
+        },
+        {
+          x: 6,
+          y: 0,
+          w: 6,
+          h: 6,
+          ig: false,
+          i: targetGrid.igItems[1].i
+        },
+      ];
+      break;
     case 3 :
       targetGrid.igLayout = [
         {
@@ -189,6 +213,114 @@ export function createInnerGrid(items, pos, width: number, height: number) {
   return newInnerGridItem;
 }
 
+/**
+ * 
+ * @param layout
+ * @param item
+ * @param target
+ * @returns {string|Array.<T>|*|Array}
+ */
+export function mergeToInnerGrid(layout, item, target) {
+  /*
+   1. create new innerGrid item
+   2. push to items
+   */
+
+  let newLayoutItem = createInnerGrid([item, target], {x: 0, y: target.y}, 3, 1);
+
+  return layout.concat([newLayoutItem]);
+}
+
+
+/**
+ *
+ * @param items
+ * @param innerGridKey
+ * @param itemKey
+ */
+export function removeInnerGridItem (items, innerGridKey, itemKey) {
+
+  // Remove innerGrid, innerGridLayout
+  // 1. find innerGrid from itemKey
+  // 2. find item from innerGridKey
+  // 3. find layoutItem from innerGridKey
+
+  let innerGridIndex = null;
+  let indexInInnerGrid;
+
+  items.some((item, i) => {
+    if (item.i === itemKey) {
+      innerGridIndex = i;
+      indexInInnerGrid = _.findIndex(item.igItems, (igItem) => {
+        return igItem.i === innerGridKey;
+      });
+      return true;
+    }
+  });
+
+  let newItems = Update(items, {
+    [innerGridIndex]: {igItems: {$splice: [[indexInInnerGrid, 1]]}}
+  });
+
+  // if innerGrid has only one item
+  // destroy innerGrid and move remain item to parent
+  // else
+  // apply default template to innerGrid
+  if (newItems[innerGridIndex].igItems.length < 2) {
+    const gridY = newItems[innerGridIndex].y;
+    const remainItem = newItems[innerGridIndex].igItems[0];
+    newItems.splice(innerGridIndex, 1);
+
+    const replacedRemainItem = Update(remainItem, {
+      x: {$set: 0},
+      y: {$set: gridY},
+      w: {$set: 1},
+      h: {$set: 1}
+    });
+
+    newItems.push(replacedRemainItem);
+
+  } else {
+    newItems[innerGridIndex].igLayout = _.reject(newItems[innerGridIndex].igLayout, (l) => {
+      return l.i === innerGridKey;
+    });
+
+    applyDefaultInnerGridLayout(newItems[innerGridIndex]);
+  }
+
+  return newItems;
+}
+
+
+
+/**
+ * get innerGrid key by innerGrid item key
+ * @param items
+ * @param itemKey
+ * @returns {*}
+ */
+export function getInnerGridKeyByInnerGridItemKey (items, itemKey) {
+  let result = null;
+  items.some((item) => {
+    if (item.ig) {
+      let index = _.findIndex(item.igItems, (igItem) => {
+        return igItem.i === itemKey;
+      });
+
+      if (index >= 0) {
+        result = item.i;
+        return true;
+      }
+    }
+  });
+  return result;
+}
+
+/**
+ * 
+ * @param el
+ * @returns {XML}
+ */
 export function generateEmptySlot (el) {
   let i = el.i;
   return (

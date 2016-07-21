@@ -2,7 +2,7 @@
 import React, {PropTypes} from 'react';
 import ReactDOM from 'react-dom';
 import _ from 'lodash';
-import {autoBindHandlers, bottom, cloneLayoutItem, compact, getLayoutItem, moveElement, switchElement,
+import {autoBindHandlers, bottom, cloneLayout, createEmptySlot, cloneLayoutItem, compact, getLayoutItem, moveElement, switchElement,
   synchronizeLayoutWithChildren, validateLayout, calcXY, calcWH, orderingLayout} from './utils/GridUtils';
 import GridItem from './GridItem';
 
@@ -186,7 +186,7 @@ export default class GridCore extends React.Component {
     oldResizeItem: null
   };
 
-  constructor (props: Object): void {
+  constructor (props: Object): void { 
     super(props);
 
     // Event Binding
@@ -206,7 +206,7 @@ export default class GridCore extends React.Component {
     //this.props.onLayoutChange(this.state.layout);
     this.setState({ isMounted: true });
   }
-
+  
   componentWillReceiveProps (nextProps: Object) {
     let newLayoutBase;
     // Allow parent to set layout directly.
@@ -223,11 +223,29 @@ export default class GridCore extends React.Component {
 
     // We need to regenerate the layout.
     if (newLayoutBase) {
-      const newLayout = synchronizeLayoutWithChildren(newLayoutBase, nextProps.children,
-                                                      nextProps.cols, this.compactType(nextProps), nextProps.arrangeMode);
+      let newLayout = newLayoutBase;
+      if (!nextProps.dragEvt) {
+        newLayout = synchronizeLayoutWithChildren(newLayoutBase, nextProps.children,
+          nextProps.cols, this.compactType(nextProps), nextProps.arrangeMode);
+      }
+
       this.setState({layout: newLayout});
       this.props.onLayoutChange(newLayout);
     }
+
+    // console.log(this.props.currentGrid);
+    // console.log(this);
+    /*if (this.props.nativeGrid && this.props.currentGrid && this.props.currentGrid.props.className === "additor-grid-manager") {
+      debugger;
+      const bi = nextProps.belowItem;
+      const layout = cloneLayout(nextProps.layout);
+      const slotedLayout = createEmptySlot(layout, bi.x, bi.y, this.props.cols);
+      slotedLayout.push(bi);
+
+      this.setState({layout: slotedLayout});
+    }*/
+    // console.log(nextProps.dragEvt);
+    // console.log(nextProps.belowItem);
   }
 
   /**
@@ -239,7 +257,7 @@ export default class GridCore extends React.Component {
     return bottom(this.state.layout) * (this.props.rowHeight + this.props.margin[1]) + this.props.margin[1] + 'px';
   }
 
-  compactType(props: ?Object): CompactType {
+  compactType(props): CompactType {
     if (!props) props = this.props;
     return props.verticalCompact === false ? null : props.compactType;
   }
@@ -276,6 +294,7 @@ export default class GridCore extends React.Component {
     let {layout} = this.state;
     const {cols} = this.props;
     const l = getLayoutItem(layout, i);
+    // const l = belowItem;
     if (!l) return;
     let placeholder;
 
@@ -289,7 +308,7 @@ export default class GridCore extends React.Component {
     // const isMergeArea = false;
 
     // Create placeholder (display only)
-     if (isMergeArea) {
+    if (isMergeArea) {
       var fakePosition = {};
       layout.some((l) => {
         // l is an item laying on the parent grid
@@ -372,7 +391,7 @@ export default class GridCore extends React.Component {
      }*/
 
     this.props.onDragStop(layout, oldDragItem, l, null, e, node);
-    console.log(oldDragItem);
+    // console.log(oldDragItem);
 
     // Set state
     this.setState({
@@ -381,7 +400,7 @@ export default class GridCore extends React.Component {
       // layout: compact(layout, this.compactType(), cols),
       oldDragItem: null
     });
-    console.log('drag stop', layout);
+    // console.log('drag stop', layout);
 
     this.props.onLayoutChange(this.state.layout);
   }
@@ -452,7 +471,7 @@ export default class GridCore extends React.Component {
     if (!child.key) return;
     const l = getLayoutItem(this.state.layout, child.key);
     if (!l) return null;
-    const { width, cols, margin, rowHeight, maxRows, isDraggable, isResizable,
+    const { width, cols, margin, rowHeight, maxRows, isDraggable, isResizable, belowItem,
       useCSSTransforms, draggableCancel, draggableHandle, generateGridCard, onDragStart, onDrag, onDragStop } = this.props;
 
     // Parse 'static'. Any properties defined directly on the grid item will take precedence.
@@ -477,9 +496,10 @@ export default class GridCore extends React.Component {
         onResize={this.onResize}
         onResizeStop={this.onResizeStop}
 
-        onSuitDragStart={onDragStart}
-        onSuitDrag={onDrag}
-        onSuitDragStop={onDragStop}
+        belowItem={belowItem}
+        onSuiteDragStart={onDragStart}
+        onSuiteDrag={onDrag}
+        onSuiteDragStop={onDragStop}
 
         isDraggable={draggable}
         isResizable={resizable}
