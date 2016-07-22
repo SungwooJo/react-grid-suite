@@ -226,7 +226,7 @@ export function mergeToInnerGrid(layout, item, target) {
    2. push to items
    */
 
-  let newLayoutItem = createInnerGrid([item, target], {x: 0, y: target.y}, 3, 1);
+  let newLayoutItem = createInnerGrid([item, target], {x: 0, y: target.y}, 3, 3);
 
   return layout.concat([newLayoutItem]);
 }
@@ -275,7 +275,7 @@ export function removeInnerGridItem (items, innerGridKey, itemKey) {
       x: {$set: 0},
       y: {$set: gridY},
       w: {$set: 1},
-      h: {$set: 1}
+      h: {$set: 3}
     });
 
     newItems.push(replacedRemainItem);

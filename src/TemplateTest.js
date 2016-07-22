@@ -13,7 +13,7 @@ export default class Test extends React.Component {
 
     this.state = {
       items: [0, 1, 2, 3, 4, 5, 6, 7].map(function (i) {
-        return {i: i.toString(), x: 0, y: 0, w: 1, h: 1, ig: false, igItems: []};
+        return {i: i.toString(), x: 0, y: 0, w: 1, h: 3, ig: false, igItems: []};
       }),
       itemsForMergeTwoAddits: [0, 1].map(function (i) {
         return {i: i.toString(), x: 0, y: 0, w: 1, h: 1, ig: false, igItems: []};
@@ -60,7 +60,6 @@ export default class Test extends React.Component {
     return (
       <div key={i} _grid={el}>
         <span className="text">{i}</span>
-        <span className="remove" style={removeStyle} onClick={this.removeDoingItem.bind(this, i)}>XXX</span>
       </div>
     );
   }
@@ -70,13 +69,12 @@ export default class Test extends React.Component {
       <div>
         <GridSuite
           className={"additor-grid-manager"}
-          margin={[10, 10]}
-          rowHeight={240}
-          verticalCompact={true}
+          margin={[20, 20]}
+          rowHeight={100}
           arrangeMode={true}
           autoMove={false}
 
-          width={600}
+          width={870}
           cols={3}
 
           maxRows={Infinity} 

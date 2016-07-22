@@ -232,7 +232,7 @@ export function createEmptySlot(sortedLayout, x, y, cols) {
       if (i+1 < sortedLayout.length && sortedLayout[i+1].ig) {
         sortedLayout[i].y = sortedLayout[i].y + 2;
       } else {
-        sortedLayout[i].y = sortedLayout[i].y + 1;
+        sortedLayout[i].y = sortedLayout[i].y + sortedLayout[i].h;
       }
       sortedLayout[i].x = 0;
     }
@@ -278,7 +278,7 @@ export function arrangeLayout(layout: Layout, cols: number): Layout {
       };
       tmpQueue.push(empty);
       col = 0;
-      row += 1;
+      row += l.h;
     }
 
     l.x = col;
@@ -287,7 +287,7 @@ export function arrangeLayout(layout: Layout, cols: number): Layout {
     col = col + l.w;
     if (col >= cols) {
       col = 0;
-      row = row + 1;
+      row = row + l.h;
     }
   }
   return sortedLayout;
@@ -434,7 +434,17 @@ export function orderingLayout(sortedLayout, x, y, movingItem, cols) {
     if (movingItem.y !== y) {
       sortedLayout.forEach((l) => {
         if (l.y === y) {
-          l.y = movingItem.y;
+          if (movingItem.h > 1) {
+            l.y = movingItem.y;
+          } else if (movingItem.h === 1 && movingItem.y > y) { // collapse innerGrid is moving up
+            if (l.ig && l.h === 1) {
+              l.y = movingItem.y;
+            } else {
+              l.y = movingItem.y - 2;
+            }
+          } else if (movingItem.h === 1 && movingItem.y < y) { // collapse innerGrid is moving up
+            l.y = movingItem.y;
+          }
         }
       });
       movingItem.y = y;
@@ -458,7 +468,7 @@ export function orderingLayout(sortedLayout, x, y, movingItem, cols) {
         if (sortedLayout[i].x + 1 < cols) {
           sortedLayout[i].x = sortedLayout[i].x + 1;
         } else {
-          sortedLayout[i].y = sortedLayout[i].y + 1;
+          sortedLayout[i].y = sortedLayout[i].y + sortedLayout[i].h;
           sortedLayout[i].x = 0;
         }
       }
@@ -467,7 +477,7 @@ export function orderingLayout(sortedLayout, x, y, movingItem, cols) {
         if (sortedLayout[i].x - 1 >= 0) {
           sortedLayout[i].x = sortedLayout[i].x - 1;
         } else {
-          sortedLayout[i].y = sortedLayout[i].y - 1;
+          sortedLayout[i].y = sortedLayout[i].y - sortedLayout[i].h;
           sortedLayout[i].x = cols - 1;
         }
       }
@@ -618,7 +628,7 @@ export function sortLayoutItems(layout: Layout, compactType: CompactType): Layou
 
 export function sortLayoutItemsByRowCol(layout: Layout): Layout {
   return [].concat(layout).sort(function(a, b) {
-    if (a.y > b.y || (a.y === b.y && a.x > b.x)) {
+    if (a.y > b.y || (a.y === b.y && b.ig) || (a.y === b.y && a.x > b.x)) {
       return 1;
     }
     return -1;

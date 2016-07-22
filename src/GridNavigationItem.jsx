@@ -1,6 +1,5 @@
 // @flow
 import React, {PropTypes} from 'react';
-import ClassNames from 'classnames';
 import {DraggableCore} from 'react-draggable';
 import {Resizable} from 'react-resizable';
 import {perc, setTopLeft, setTransform, autoBindHandlers} from './utils/GridUtils';
@@ -8,22 +7,23 @@ import {generateEmptySlot} from './utils/InnerGridUtils';
 import InnerGrid from './item/InnerGrid.jsx';
 import _ from 'lodash';
 
-const noop = () => {};
+const noop = () => {
+};
 
 
 /**
  * An individual item within a ReactGridLayout.
  */
-export default class GridItem extends React.Component {
+export default class GridNavigationItem extends React.Component {
 
-  state: State = {
+  state:State = {
     resizing: null,
     dragging: null,
     className: '',
     isInnerGridDragging: false,
   };
 
-  constructor (props: Object): void {
+  constructor(props:Object):void {
     super(props);
 
     // Event Binding
@@ -33,7 +33,7 @@ export default class GridItem extends React.Component {
   }
 
   // Helper for generating column width
-  calcColWidth(): number {
+  calcColWidth():number {
     const {margin, containerWidth, cols} = this.props;
     return (containerWidth - (margin[0] * (cols + 1))) / cols;
   }
@@ -47,7 +47,7 @@ export default class GridItem extends React.Component {
    * @param  {Number}  h             H coordinate in grid units.
    * @return {Object}                Object containing coords.
    */
-  calcPosition(x: number, y: number, w: number, h: number, state: ?Object): Position {
+  calcPosition(x:number, y:number, w:number, h:number, state):Position {
     const {margin, rowHeight} = this.props;
     const colWidth = this.calcColWidth();
 
@@ -80,7 +80,7 @@ export default class GridItem extends React.Component {
    * @param  {Number} left Left position (relative to parent) in pixels.
    * @return {Object} x and y in grid units.
    */
-  calcXY(top: number, left: number): {x: number, y: number} {
+  calcXY(top:number, left:number):{x: number, y: number} {
     const {margin, cols, rowHeight, w, h, maxRows} = this.props;
     const colWidth = this.calcColWidth();
 
@@ -111,7 +111,7 @@ export default class GridItem extends React.Component {
    * @param  {Number} width  Width in pixels.
    * @return {Object} w, h as grid units.
    */
-  calcWH({height, width}: {height: number, width: number}): {w: number, h: number} {
+  calcWH({height, width}: {height: number, width: number}):{w: number, h: number} {
     const {margin, maxRows, cols, rowHeight, x, y} = this.props;
     const colWidth = this.calcColWidth();
 
@@ -137,7 +137,7 @@ export default class GridItem extends React.Component {
    * @param  {Object} pos Position object with width, height, left, top.
    * @return {Object}     Style object.
    */
-  createStyle(pos: Position): {[key: string]: ?string} {
+  createStyle(pos:Position):{[key: string]: ?string} {
     const {usePercentages, containerWidth, useCSSTransforms} = this.props;
 
     let style;
@@ -164,7 +164,7 @@ export default class GridItem extends React.Component {
    * @param  {Element} child    Child element.
    * @return {Element}          Child wrapped in Draggable.
    */
-  mixinDraggable(child: React.Element): React.Element {
+  mixinDraggable(child:React.Element):React.Element {
     return (
       <DraggableCore
         onStart={this.onDragHandler('onDragStart')}
@@ -183,7 +183,7 @@ export default class GridItem extends React.Component {
    * @param  {Element} child    Child element.
    * @return {Element}          Child wrapped in Draggable.
    */
-  mixinDraggableForInner(child: React.Element): React.Element {
+  mixinDraggableForInner(child:React.Element):React.Element {
     return (
       <DraggableCore
         onStart={this.onDragHandler('onDragStart')}
@@ -204,7 +204,7 @@ export default class GridItem extends React.Component {
    * @param  {Object} position  Position object (pixel values)
    * @return {Element}          Child wrapped in Resizable.
    */
-  mixinResizable(child: React.Element, position: Position): React.Element {
+  mixinResizable(child:React.Element, position:Position):React.Element {
     const {cols, x, minW, minH, maxW, maxH} = this.props;
 
     // This is the max possible width - doesn't go to infinity because of the width of the window
@@ -233,15 +233,15 @@ export default class GridItem extends React.Component {
    * Wrapper around drag events to provide more useful data.
    * All drag events call the function with the given handler name,
    * with the signature (index, x, y).
-   * 
+   *
    * @param  {String} handlerName Handler name to wrap.
    * @return {Function}           Handler function.
    */
-  onDragHandler(handlerName:string): Function {
+  onDragHandler(handlerName:string):Function {
     return (e:Event, {node, position}: {node: HTMLElement, position: CorePosition}) => {
       if (!this.props[handlerName]) return;
 
-      let newPosition: {top: number, left: number} = {top: 0, left: 0};
+      let newPosition:{top: number, left: number} = {top: 0, left: 0};
 
       // Get new XY
       switch (handlerName) {
@@ -297,7 +297,7 @@ export default class GridItem extends React.Component {
    * @param  {String} handlerName Handler name to wrap.
    * @return {Function}           Handler function.
    */
-  onResizeHandler(handlerName:string): Function {
+  onResizeHandler(handlerName:string):Function {
     return (e:Event, {element, size}: {element: HTMLElement, size: Position}) => {
       if (!this.props[handlerName]) return;
       const {cols, x, i, maxW, minW, maxH, minH} = this.props;
@@ -319,18 +319,18 @@ export default class GridItem extends React.Component {
       this.props[handlerName](i, w, h, {e, element, size});
     };
   }
-  
-  componentDidMount () {
+
+  componentDidMount() {
     // console.log(this.refs['innerGridRef' + this.props.i]);
-  
+
     let innerGridRef = this.refs['innerGridRef' + this.props.i];
     if (innerGridRef) {
       // addInnerGrid
       this.props.addInnerGrid(innerGridRef);
     }
   }
-  
-  generateCard (item) {
+
+  generateCard(item) {
     if (item.i.indexOf('empty-card-slot') >= 0) {
       return generateEmptySlot(item);
     }
@@ -338,85 +338,45 @@ export default class GridItem extends React.Component {
       return this.props.generateGridCard(item);
     }
   }
-  
-  render(): React.Element {
-    const {x, y, w, h, i, isDraggable, isResizable, useCSSTransforms, isInnerGrid, innerGriditems, innerGridLayout, containerWidth, margin,
-            onSuiteDragStart, onSuiteDrag, onSuiteDragStop, belowItem, onDragStart, onDrag, onDragStop, toggleExpendedInnerGrid, isExpended} = this.props;
-  
+
+  render():React.Element {
+    const {
+      x, y, w, h, i, isDraggable, isResizable, useCSSTransforms, isInnerGrid, innerGriditems, innerGridLayout, containerWidth, margin,
+      onSuiteDragStart, onSuiteDrag, onSuiteDragStop, belowItem, onDragStart, onDrag, onDragStop
+    } = this.props;
+
     const pos = this.calcPosition(x, y, w, h, this.state);
     const child = React.Children.only(this.props.children);
     let newChild;
-  
-    if (!isInnerGrid) {
-      // Create the child element. We clone the existing element but modify its className and style.
-      newChild = React.cloneElement(child, {
-        // Munge a classname. Use passed in classnames and resizing.
-        // React with merge the classNames.
-        className: [
-          'react-grid-item',
-          child.props.className || '',
-          this.props.className,
-          this.state.dragging ? 'react-draggable-dragging' : '',
-          useCSSTransforms ? 'cssTransforms' : ''
-        ].join(' '),
-        // We can set the width and height on the child, but unfortunately we can't set the position.
-        style: {...this.props.style, ...child.props.style, ...this.createStyle(pos)}
-      });
 
-      // Resizable support. This is usually on but the user can toggle it off.
-      if (isResizable) newChild = this.mixinResizable(newChild, pos);
+    // Create the child element. We clone the existing element but modify its className and style.
+    newChild = React.cloneElement(child, {
+      // Munge a classname. Use passed in classnames and resizing.
+      // React with merge the classNames.
+      className: [
+        'react-grid-item',
+        child.props.className || '',
+        this.props.className,
+        this.props.static ? 'static' : '',
+        this.state.resizing ? 'resizing' : '',
+        this.state.dragging ? 'react-draggable-dragging' : '',
+        useCSSTransforms ? 'cssTransforms' : ''
+      ].join(' '),
+      // We can set the width and height on the child, but unfortunately we can't set the position.
+      style: {...this.props.style, ...child.props.style, ...this.createStyle(pos)}
+    });
 
-      // Draggable support. This is always on, except for with placeholders.
-      if (isDraggable) newChild = this.mixinDraggable(newChild);
-    }
-    else {
-      // by swjo 16/06/27
-      // Create the innerGrid element.
-      let innerGridHeader =
-        <header className="ig-header">
-          <h2 className="ig-title">
-            header
-          </h2>
-          <span className="ig-expend-btn" onClick={toggleExpendedInnerGrid.bind(null, i)}>
-          </span>
-        </header>;
+    // Resizable support. This is usually on but the user can toggle it off.
+    if (isResizable) newChild = this.mixinResizable(newChild, pos);
 
-      let innerGrid = React.createElement(
-        InnerGrid,
-        {ref: 'innerGridRef' + i, width: (containerWidth-(margin[0]*2)), className: ClassNames('inner-grid', {'collapse' : !isExpended}), cols: 12, margin: [5, 5], rowHeight: innerGriditems.length < 4 ? 25 : 50, belowItem: belowItem,
-          layout: innerGridLayout, isDragging: true, isResizable: false, switchMode: true, onSuiteDragStart: onSuiteDragStart, onSuiteDrag: onSuiteDrag, onSuiteDragStop: onSuiteDragStop,
-          onCoreDragStart: onDragStart, onCoreDrag: onDrag, onCoreDragStop: onDragStop, onCoreDragHandler: this.onDragHandler},
-        _.map(innerGriditems, this.generateCard)
-      );
-  
-      newChild = React.cloneElement(child, {
-        // Munge a classname. Use passed in classnames and resizing.
-        // React with merge the classNames.
-        className: [
-          'react-grid-item',
-          child.props.className || '',
-          this.props.className,
-          this.props.static ? 'static' : '',
-          this.state.resizing ? 'resizing' : '',
-          this.state.dragging ? 'react-draggable-dragging' : '',
-          useCSSTransforms ? 'cssTransforms' : ''
-        ].join(' '),
-        // We can set the width and height on the child, but unfortunately we can't set the position.
-        style: {...this.props.style, ...child.props.style, ...this.createStyle(pos)}
-      },innerGridHeader, innerGrid);
+    // Draggable support. This is always on, except for with placeholders.
+    if (isDraggable) newChild = this.mixinDraggable(newChild);
 
-      // Resizable support. This is usually on but the user can toggle it off.
-      if (isResizable) newChild = this.mixinResizable(newChild, pos);
-
-      // Draggable support. This is always on, except for with placeholders.
-      if (isDraggable) newChild = this.mixinDraggableForInner(newChild);
-    }
-  
     return newChild;
   }
 }
 
-GridItem.propTypes = {
+GridNavigationItem.propTypes = {
   // Children must be only a single element
   children: PropTypes.element,
 
@@ -488,7 +448,7 @@ GridItem.propTypes = {
   cancel: PropTypes.string
 };
 
-GridItem.defaultProps = {
+GridNavigationItem.defaultProps = {
   className: '',
   cancel: '',
   minH: 1,
@@ -497,7 +457,7 @@ GridItem.defaultProps = {
   maxW: Infinity,
 
   // Flags by swjo
-  isInnerGrid : false,
+  isInnerGrid: false,
   innerGridLayout: [],
   addInnerGrid: noop
 };

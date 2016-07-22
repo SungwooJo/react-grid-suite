@@ -2,24 +2,41 @@
 import React, {PropTypes} from 'react';
 import ReactDOM from 'react-dom';
 import _ from 'lodash';
-import {autoBindHandlers, bottom, cloneLayout, createEmptySlot, cloneLayoutItem, compact, getLayoutItem, moveElement, switchElement,
-  synchronizeLayoutWithChildren, validateLayout, calcXY, calcWH, orderingLayout, arrangeLayout} from './utils/GridUtils';
-import GridItem from './GridItem';
+import {
+  autoBindHandlers,
+  bottom,
+  cloneLayout,
+  createEmptySlot,
+  cloneLayoutItem,
+  compact,
+  getLayoutItem,
+  moveElement,
+  switchElement,
+  synchronizeLayoutWithChildren,
+  validateLayout,
+  calcXY,
+  calcWH,
+  orderingLayout
+} from './utils/GridUtils';
+
+import GridNavigationItem from './GridNavigationItem';
 
 // Types
 import type {ResizeEvent, DragEvent, Layout, LayoutItem} from './utils/GridUtils';
-type State = {
-  activeDrag: ?LayoutItem,
+type
+State = {
+  activeDrag: ? LayoutItem,
   isMounted: boolean,
   isDragging: boolean,
   layout: Layout,
-  oldDragItem: ?LayoutItem,
-  oldResizeItem: ?LayoutItem
+  oldDragItem: ? LayoutItem,
+  oldResizeItem: ? LayoutItem
 };
 // End Types
 
 // Local fields
-const noop = () => {}; // no-operation
+const noop = () => {
+}; // no-operation
 const propTypes = {
   //
   // Basic props
@@ -89,7 +106,6 @@ const propTypes = {
   innerGrids: PropTypes.array,
 
   addInnerGrid: PropTypes.func,
-  setCurrentGrid: PropTypes.func,
   //
   // Callbacks
   //
@@ -104,21 +120,6 @@ const propTypes = {
   onDrag: PropTypes.func,
   // Calls when drag is complete.
   onDragStop: PropTypes.func,
-  //Calls when resize starts.
-  onResizeStart: PropTypes.func,
-  // Calls when resize movement happens.
-  onResize: PropTypes.func,
-  // Calls when resize is complete.
-  onResizeStop: PropTypes.func,
-
-  // Calls on blending.
-  onBlendingItem: PropTypes.object,
-  // Calls when blending-In happens.
-  onBlendIn: PropTypes.func,
-  // Calls when blending-Out happens.
-  onBlendOut: PropTypes.func,
-
-  onLayoutResize: PropTypes.func,
   //
   // Other validations
   //
@@ -132,7 +133,7 @@ const propTypes = {
     var keys = {};
     React.Children.forEach(children, function (child) {
       if (keys[child.key]) {
-        throw new Error("Duplicate child key found! This will cause problems in GridCore.");
+        throw new Error("Duplicate child key found! This will cause problems in GridNavigation.");
       }
       keys[child.key] = true;
     });
@@ -156,37 +157,29 @@ const defaultProps = {
 
   innerGrids: [],
   addInnerGrid: noop,
-  setCurrentGrid: noop,
 
   onLayoutChange: noop,
   onDragStart: noop,
   onDrag: noop,
   onDragStop: noop,
-  onResizeStart: noop,
-  onResize: noop,
-  onResizeStop: noop,
-
-  onLayoutResize: noop,
-  onBlendIn: noop,
-  onBlendOut: noop
 };
 
 /**
  * A reactive, fluid grid layout with draggable, resizable components.
  */
-export default class GridCore extends React.Component {
+export default class GridNavigation extends React.Component {
 
-  state: State = {
+  state:State = {
     activeDrag: null,
     isMounted: false,
     layout: synchronizeLayoutWithChildren(this.props.layout, this.props.children, this.props.cols,
-                                          // Legacy support for verticalCompact: false
-                                          this.compactType(), this.props.arrangeMode),
+      // Legacy support for verticalCompact: false
+      this.compactType(), this.props.arrangeMode),
     oldDragItem: null,
     oldResizeItem: null
   };
 
-  constructor (props: Object): void { 
+  constructor(props:Object):void {
     super(props);
 
     // Event Binding
@@ -194,21 +187,17 @@ export default class GridCore extends React.Component {
       'onDragStart',
       'onDrag',
       'onDragStop',
-      'onResizeStart',
-      'onResize',
-      'onResizeStop',
-      'toggleExpendedInnerGrid'
     ]);
   }
 
-  componentDidMount () {
+  componentDidMount() {
     // Call back with layout on mount. This should be done after correcting the layout width
     // to ensure we don't rerender with the wrong width.
     //this.props.onLayoutChange(this.state.layout);
-    this.setState({ isMounted: true });
+    this.setState({isMounted: true});
   }
-  
-  componentWillReceiveProps (nextProps: Object) {
+
+  componentWillReceiveProps(nextProps:Object) {
     let newLayoutBase;
     // Allow parent to set layout directly.
     if (!_.isEqual(nextProps.layout, this.props.layout || nextProps.compactType !== this.props.compactType)) {
@@ -237,14 +226,14 @@ export default class GridCore extends React.Component {
     // console.log(this.props.currentGrid);
     // console.log(this);
     /*if (this.props.nativeGrid && this.props.currentGrid && this.props.currentGrid.props.className === "additor-grid-manager") {
-      debugger;
-      const bi = nextProps.belowItem;
-      const layout = cloneLayout(nextProps.layout);
-      const slotedLayout = createEmptySlot(layout, bi.x, bi.y, this.props.cols);
-      slotedLayout.push(bi);
+     debugger;
+     const bi = nextProps.belowItem;
+     const layout = cloneLayout(nextProps.layout);
+     const slotedLayout = createEmptySlot(layout, bi.x, bi.y, this.props.cols);
+     slotedLayout.push(bi);
 
-      this.setState({layout: slotedLayout});
-    }*/
+     this.setState({layout: slotedLayout});
+     }*/
     // console.log(nextProps.dragEvt);
     // console.log(nextProps.belowItem);
   }
@@ -258,7 +247,7 @@ export default class GridCore extends React.Component {
     return bottom(this.state.layout) * (this.props.rowHeight + this.props.margin[1]) + this.props.margin[1] + 'px';
   }
 
-  compactType(props): CompactType {
+  compactType(props):CompactType {
     if (!props) props = this.props;
     return props.verticalCompact === false ? null : props.compactType;
   }
@@ -299,42 +288,34 @@ export default class GridCore extends React.Component {
     if (!l) return;
     let placeholder;
 
-    // control y
-    if (y > l.y && l.h > 1) {
-      y = (Math.round( y / l.h )) * l.h;
-
-    }
-    // y = Math.floor( y / l.h ) * l.h + y;
-    // Math.floor( y / this.props.h ) * this.props.h
-
     // console.log(oldDragItem);
     // console.log(x);
     // console.log(y);
     // console.log('x:', coordX - l.x);
     // console.log('y:', coordY - l.y);
     //const isMergeArea = !l.ig && (Math.abs(coordX - l.x) < 1.2) && (Math.abs(coordY - l.y) < 1.2);
-
-    let fakePosition = {};
-    layout.some((l) => {
-      // l is an item laying on the parent grid
-      let isInRangeX = (x >= l.x) && (x < l.x + l.w);
-      let isInRangeY = (y >= l.y) && (y < l.y + l.h);
-      if (isInRangeX && isInRangeY && l.i != i) {
-        fakePosition.x = l.x;
-        fakePosition.y = l.y;
-        fakePosition.w = l.w;
-        fakePosition.h = l.h;
-        fakePosition.i = l.i;
-        return true;
-      }
-    });
-    console.log(Math.abs(coordY - l.y));
-
-    const isMergeArea = (l.w === 1) && (Math.abs(coordX - l.x) < 1.2) && (Math.abs(coordY - l.y) < 3.2);
+    const isMergeArea = (l.w === 1) && (Math.abs(coordX - l.x) < 1.2) && (Math.abs(coordY - l.y) < 1.2);
     // const isMergeArea = false;
 
     // Create placeholder (display only)
-    if (isMergeArea || (fakePosition.w > 1 && l.w < 2)) {
+    if (isMergeArea) {
+      var fakePosition = {};
+      layout.some((l) => {
+        // l is an item laying on the parent grid
+        let isInRangeX = (x >= l.x) && (x < l.x + l.w);
+        let isInRangeY = (y >= l.y) && (y < l.y + l.h);
+        if (isInRangeX && isInRangeY && l.i != i) {
+          fakePosition.x = l.x;
+          fakePosition.y = l.y;
+          fakePosition.w = l.w;
+          fakePosition.h = l.h;
+          fakePosition.i = l.i;
+
+          //console.log(e);
+          //console.log(node);
+          return true;
+        }
+      });
 
       placeholder = {
         w: fakePosition.w || l.w,
@@ -359,8 +340,6 @@ export default class GridCore extends React.Component {
       //layout = moveElement(layout, l, x, y, true /* isUserAction */);
       layout = moveElement(layout, l, x, y, true /* isUserAction */, this.compactType(), cols);
     }
-
-    console.log(placeholder);
 
     this.props.onDrag(layout, oldDragItem, l, placeholder, e, node);
 
@@ -416,99 +395,26 @@ export default class GridCore extends React.Component {
     this.props.onLayoutChange(this.state.layout);
   }
 
-  onResizeStart(i:string, w:number, h:number, {e, node}: ResizeEvent) {
-    const {layout} = this.state;
-    var l = getLayoutItem(layout, i);
-    if (!l) return;
-
-    this.setState({oldResizeItem: cloneLayoutItem(l)});
-
-    this.props.onResizeStart(layout, l, l, null, e, node);
-  }
-
-  onResize(i:string, w:number, h:number, {e, node}: ResizeEvent) {
-    const {layout, oldResizeItem} = this.state;
-    const {cols} = this.props;
-    var l = getLayoutItem(layout, i);
-    if (!l) return;
-
-    // Set new width and height.
-    l.w = w;
-    l.h = h;
-
-    // Create placeholder element (display only)
-    var placeholder = {
-      w: w,
-      h: h,
-      x: l.x,
-      y: l.y,
-      static: true,
-      i: i
-    };
-
-    this.props.onResize(layout, oldResizeItem, l, placeholder, e, node);
-
-    // Re-compact the layout and set the drag placeholder.
-    this.setState({
-      layout: compact(layout, this.compactType(), cols),
-      activeDrag: placeholder
-    });
-  }
-
-  onResizeStop (i:string, w:number, h:number, {e, node}: ResizeEvent) {
-    const {layout, oldResizeItem} = this.state;
-    const {cols} = this.props;
-    var l = getLayoutItem(layout, i);
-    l.moved = true;
-
-    this.props.onResizeStop(layout, oldResizeItem, l, null, e, node);
-
-    // Set state
-    this.setState({
-      activeDrag: null,
-      layout: compact(layout, this.compactType(), cols),
-      oldResizeItem: null
-    });
-
-    this.props.onLayoutChange(layout);
-  }
-
-  toggleExpendedInnerGrid(i) {
-    const { layout } = this.state;
-    layout.some((l) => {
-      if (l.i === i) {
-        if (l.h === 1) {
-          l.h = 3;
-        } else {
-          l.h = 1;
-        }
-        return true;
-      }
-    });
-
-    this.setState({
-      layout: arrangeLayout(layout, this.props.cols)
-    });
-  }
-
   /**
    * Given a grid item, set its style attributes & surround in a <Draggable>.
    * @param  {Element} child React element.
    * @return {Element}       Element wrapped in draggable and properly placed.
    */
-  processGridItem(child: React.Element): ?React.Element {
+  processGridItem(child:React.Element) {
     if (!child.key) return;
     const l = getLayoutItem(this.state.layout, child.key);
     if (!l) return null;
-    const { width, cols, margin, rowHeight, maxRows, isDraggable, isResizable, belowItem,
-      useCSSTransforms, draggableCancel, draggableHandle, generateGridCard, onDragStart, onDrag, onDragStop } = this.props;
+    const {
+      width, cols, margin, rowHeight, maxRows, isDraggable, isResizable, belowItem,
+      useCSSTransforms, draggableCancel, draggableHandle, generateGridCard, onDragStart, onDrag, onDragStop
+    } = this.props;
 
     // Parse 'static'. Any properties defined directly on the grid item will take precedence.
     const draggable = Boolean(!l.static && isDraggable && (l.isDraggable || l.isDraggable == null));
     const resizable = Boolean(!l.static && isResizable && (l.isResizable || l.isResizable == null));
 
     return (
-      <GridItem
+      <GridNavigationItem
         containerWidth={width}
         cols={cols}
         margin={margin}
@@ -529,8 +435,6 @@ export default class GridCore extends React.Component {
         onSuiteDragStart={onDragStart}
         onSuiteDrag={onDrag}
         onSuiteDragStop={onDragStop}
-        toggleExpendedInnerGrid={this.toggleExpendedInnerGrid}
-        isExpended={l.h > 1}
 
         isDraggable={draggable}
         isResizable={resizable}
@@ -556,7 +460,7 @@ export default class GridCore extends React.Component {
         {
           React.cloneElement(child, {})
         }
-      </GridItem>
+      </GridNavigationItem>
     );
   }
 
@@ -570,13 +474,7 @@ export default class GridCore extends React.Component {
     };
 
     return (
-      <div className={mergedClassName} style={mergedStyle} ref={ (ref) => {
-
-    if (ref) {
-      //let rect = ref.getBoundingClientRect();
-      this.props.onLayoutResize(ref);
-    }
-        } }>
+      <div className={mergedClassName} style={mergedStyle} >
         {
           React.Children.map(this.props.children, (child) => this.processGridItem(child))
         }
@@ -586,5 +484,5 @@ export default class GridCore extends React.Component {
 }
 // TODO publish internal ReactClass displayName transform
 
-GridCore.propTypes = propTypes;
-GridCore.defaultProps = defaultProps;
+GridNavigation.propTypes = propTypes;
+GridNavigation.defaultProps = defaultProps;

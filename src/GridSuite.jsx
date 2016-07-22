@@ -5,13 +5,14 @@
 import React, { PropTypes } from 'react';
 import ReactDOM from 'react-dom';
 import { autoBindHandlers, calcXY, cloneLayout, arrangeLayout, createEmptySlot, sortLayoutItemsByRowCol, removeItem } from './utils/GridUtils';
-import { createInnerGrid, applyDefaultInnerGridLayout, mergeToInnerGrid, removeInnerGridItem, getInnerGridKeyByInnerGridItemKey } from './utils/InnerGridUtils';
+import { applyDefaultInnerGridLayout, mergeToInnerGrid, removeInnerGridItem, getInnerGridKeyByInnerGridItemKey } from './utils/InnerGridUtils';
 import Update from 'react-addons-update';
 import _ from 'lodash';
 
 // Own Modules...
 import GridPlaceholder from './GridPlaceholder.jsx';
 import GridCore from './GridCore.jsx';
+import GridNavigation from './GridNavigation';
 
 
 // Local Fields...
@@ -141,7 +142,7 @@ class GridSuite extends React.Component {
         console.log('outerGrid');
         currentPos = calcXY(this.props, e.y, e.x, ReactDOM.findDOMNode(this).getBoundingClientRect()); // currentPos = { x, y }
         belowItem.w = 1;
-        belowItem.h = 1;
+        belowItem.h = 3;
         belowItem.x = currentPos.x;
         belowItem.y = currentPos.y;
         belowItem.i = l.i;
@@ -150,7 +151,7 @@ class GridSuite extends React.Component {
         //
         // arrange clearly layout and create empty slot in the layout
         //
-        arrangeLayout(sortLayoutItemsByRowCol(newLayout), cols);
+        arrangeLayout(newLayout, cols);
         newLayout = createEmptySlot(newLayout, belowItem.x, belowItem.y, cols);
       }
 
@@ -208,64 +209,75 @@ class GridSuite extends React.Component {
 
     const { currentGrid, nativeGrid, belowItem, items } = this.state;
 
+
     // drag stop destinations
     // 1. Addit
     // 2. innerGrid (paragraph)
     // 3. side list
     // 4. nothing
 
-    const itemIndex = _.findIndex(items, (item) => {
-      if (item.i === belowItem.i) {
-        return true;
-      }
-    });
+    if (belowItem) {
 
-    // dragging item is from innerGrid to parent Grid
-    if (itemIndex < 0 && nativeGrid && currentGrid !== nativeGrid) {
-      console.log('sub item is ready!');
-
-      const newItems = removeInnerGridItem(items, oldDragItem.i, getInnerGridKeyByInnerGridItemKey(items, oldDragItem.i));
-      const newItem = Update(oldDragItem, {
-        x: {$set: belowItem.x},
-        y: {$set: belowItem.y},
-        w: {$set: belowItem.w},
-        h: {$set: belowItem.h}
+      const itemIndex = _.findIndex(items, (item) => {
+        if (item.i === belowItem.i) {
+          return true;
+        }
       });
 
-      newItems.push(newItem);
+      // dragging item is from innerGrid to parent Grid
+      if (itemIndex < 0 && nativeGrid && currentGrid !== nativeGrid) {
+        console.log('sub item is ready!');
 
-      this.setState({
-        items: arrangeLayout(newItems, this.props.cols)
-      });
-
-      const newInnerGrids = this.state.innerGrids.filter((ig) => {
-        return ig._isMounted;
-      });
-
-      this.setState({
-        innerGrids: newInnerGrids
-      });
-
-    } else {
-      // 1. stop on Addit
-
-      // i) in items
-      // ii) not itself
-      if (currentGrid.props.className !== 'inner-grid' && items[itemIndex].i !== oldDragItem.i && !items[itemIndex].ig) {
-        console.log('merge is ready!');
-        this.mergeItems(oldDragItem.i, items[itemIndex].i);
-
-      } else if (currentGrid.props.className !== 'inner-grid' && items[itemIndex].ig && !l.ig) {
-        console.log('adding item is ready');
-        let newItems = Update(this.state.items, {
-          [itemIndex]: {igItems: {$push: [oldDragItem]}}
+        const newItems = removeInnerGridItem(items, oldDragItem.i, getInnerGridKeyByInnerGridItemKey(items, oldDragItem.i));
+        const newItem = Update(oldDragItem, {
+          x: {$set: belowItem.x},
+          y: {$set: belowItem.y},
+          w: {$set: belowItem.w},
+          h: {$set: belowItem.h}
         });
-        newItems[itemIndex] = applyDefaultInnerGridLayout(newItems[itemIndex]);
-        newItems = _.reject(newItems, {i: oldDragItem.i});
+
+        newItems.push(newItem);
 
         this.setState({
-          items: newItems
+          items: arrangeLayout(newItems, this.props.cols)
         });
+
+        const newInnerGrids = this.state.innerGrids.filter((ig) => {
+          return ig._isMounted;
+        });
+
+        this.setState({
+          innerGrids: newInnerGrids
+        });
+
+      } else {
+        // 1. stop on Addit
+
+        // i) in items
+        // ii) not itself
+        if (currentGrid.props.className !== 'inner-grid' && items[itemIndex].i !== oldDragItem.i && !items[itemIndex].ig) {
+          // addit + addit
+          console.log('merge is ready!');
+          this.mergeItems(oldDragItem.i, items[itemIndex].i);
+
+        } else if (currentGrid.props.className !== 'inner-grid' && items[itemIndex].ig && !l.ig) {
+          // addit + innerGrid
+          console.log('adding item is ready');
+          let newItems = Update(this.state.items, {
+            [itemIndex]: {igItems: {$push: [oldDragItem]}}
+          });
+          newItems[itemIndex] = applyDefaultInnerGridLayout(newItems[itemIndex]);
+          newItems = _.reject(newItems, {i: oldDragItem.i});
+
+          this.setState({
+            items: arrangeLayout(newItems, this.props.cols)
+          });
+
+        } else if (currentGrid.props.className !== 'inner-grid') {
+          this.setState({
+            items: arrangeLayout(layout, this.props.cols)
+          });
+        }
       }
     }
 
@@ -273,7 +285,7 @@ class GridSuite extends React.Component {
       dragEvt: null,
       currentGrid: null,
       nativeGrid: null,
-      belowItem: null
+      belowItem: null,
     });
   }
 
@@ -375,13 +387,17 @@ class GridSuite extends React.Component {
   }
 
   render() {
-    const {onLayoutChange, generateGridView, ...other} = this.props;
+    const {onLayoutChange, generateGridView, generateGridCard, ...other} = this.props;
     const {currentGrid, nativeGrid, innerGrids, items, belowItem, dragEvt} = this.state;
+    const innerGridLayout = items.filter((item) => {
+      return item.ig;
+    });
 
     return (
       <div className="additor-grid-manager-wrapper">
         <GridCore
           {...other}
+          generateGridCard={generateGridCard}
           generateGridView={generateGridView}
           nativeGrid={nativeGrid}
           currentGrid={currentGrid}
@@ -390,6 +406,7 @@ class GridSuite extends React.Component {
           layout={items}
           belowItem={belowItem}
           dragEvt={dragEvt}
+          arrangeMode={true}
           
           isResizable={false}
 
@@ -399,7 +416,7 @@ class GridSuite extends React.Component {
           onDragStop={this.onDragStop}
           addInnerGrid={this.addInnerGrid}
         >
-          {_.map(items, this.props.generateGridCard)} 
+          {_.map(items, generateGridCard)}
         </GridCore>
         {
           this.placeholder()
